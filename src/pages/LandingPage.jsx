@@ -52,13 +52,13 @@ export default function LandingPage() {
             fontSize: 'clamp(34px, 5.8vw, 60px)', fontWeight: 800, color: 'var(--text)',
             letterSpacing: '-0.035em', lineHeight: 1.1, marginBottom: '14px'
           }}>
-            Say what you want. <br />
+            Private Messaging. <br />
             <span style={{
               background: 'linear-gradient(135deg, #a855f7 0%, #8b5cf6 45%, #06b6d4 100%)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
               filter: 'drop-shadow(0 0 25px rgba(139,92,246,0.35))'
             }}>
-              It vanishes when you're done.
+              Zero History.
             </span>
           </h1>
 
@@ -66,7 +66,7 @@ export default function LandingPage() {
             fontSize: 'clamp(14px, 1.8vw, 16px)', color: 'var(--text-muted)',
             maxWidth: '520px', margin: '0 auto', lineHeight: 1.55
           }}>
-            Encrypted rooms, one-time burn messages, and self-destruct links. Nothing stays behind.
+            Self-destructing rooms & secret links.
           </p>
 
           {/* Quick Dashboard link if already authenticated */}
