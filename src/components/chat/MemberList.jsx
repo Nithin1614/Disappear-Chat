@@ -53,9 +53,11 @@ export default function MemberList({ members, isOpen, onToggle }) {
                     }} />
                   </div>
                   <div style={{ minWidth: 0 }}>
-                    <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</p>
-                    <p style={{ fontSize: '11px', color: m.is_online ? 'var(--success)' : 'var(--text-muted)' }}>
-                      {m.is_online ? 'Active now' : 'Offline'}
+                    <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {m.display_name || 'Anonymous'}
+                    </p>
+                    <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '10px', color: 'var(--text-dim)', marginTop: '1px' }}>
+                      ID: {m.user_id}
                     </p>
                   </div>
                 </div>

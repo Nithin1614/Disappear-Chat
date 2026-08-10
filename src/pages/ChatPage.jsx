@@ -68,6 +68,15 @@ export default function ChatPage() {
     return map;
   }, [onlineMembers]);
 
+  const partner = useMemo(() => {
+    return onlineMembers.find(m => m.user_id !== userId);
+  }, [onlineMembers, userId]);
+
+  const headerTitle = partner ? (partner.display_name || partner.user_id) : (displayName || `Room ${roomCode}`);
+  const headerSubtitle = partner
+    ? `Room: ${roomCode} · ID: ${partner.user_id}`
+    : `Room: ${roomCode} · ID: ${userId}`;
+
   const countdown = useCountdown(room?.expires_at, room?.duration_minutes);
 
   // Auth redirect
@@ -355,8 +364,10 @@ export default function ChatPage() {
                 <Shield size={15} color="var(--accent)" />
               </div>
               <div>
-                <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '15px', fontWeight: 700, color: 'var(--text)', letterSpacing: '0.06em' }}>{roomCode}</p>
-                <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>E2E Encrypted{!countdown.isOnline ? ' · Offline Mode' : ''}</p>
+                <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>{headerTitle}</p>
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace', marginTop: '2px' }}>
+                  {headerSubtitle}{!countdown.isOnline ? ' · Offline' : ''}
+                </p>
               </div>
             </div>
           </div>
