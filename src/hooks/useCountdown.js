@@ -4,7 +4,8 @@ const GRACE_PERIOD_SECONDS = 30;
 
 /**
  * Countdown timer hook with offline support and 30s grace period.
- * Works locally when internet is unavailable.
+ * For sessions 5 minutes or longer (or extended sessions), a 30s grace period
+ * activates at 00:00. If not extended within 30s, the room is terminated.
  */
 export function useCountdown(expiresAt, durationMinutes = 0) {
   const [now, setNow] = useState(Date.now());
@@ -26,7 +27,7 @@ export function useCountdown(expiresAt, durationMinutes = 0) {
     };
   }, []);
 
-  // Local countdown tick — runs even offline
+  // Local countdown tick — runs every second
   useEffect(() => {
     if (!expiresAt) return;
 
@@ -39,7 +40,22 @@ export function useCountdown(expiresAt, durationMinutes = 0) {
     };
   }, [expiresAt]);
 
-  // Grace period countdown (starts when timer hits 0)
+  // Reset grace period whenever room extension occurs (expiresAt updates)
+  useEffect(() => {
+    setGraceStarted(false);
+    setGraceSecondsLeft(GRACE_PERIOD_SECONDS);
+  }, [expiresAt]);
+
+  // Start grace period countdown when main room timer hits 0 for 5m+ rooms
+  useEffect(() => {
+    if (!expiresAt) return;
+    const expiryTime = new Date(expiresAt).getTime();
+    if (now >= expiryTime && durationMinutes >= 5 && !graceStarted) {
+      setGraceStarted(true);
+    }
+  }, [expiresAt, now, durationMinutes, graceStarted]);
+
+  // Grace period countdown tick (30s -> 0s)
   useEffect(() => {
     if (!graceStarted) return;
 
@@ -86,8 +102,8 @@ export function useCountdown(expiresAt, durationMinutes = 0) {
     const isUnder30Sec = totalSeconds > 0 && totalSeconds <= 30;
     const rawExpired = totalSeconds <= 0;
 
-    // Grace period only applies for sessions longer than 4 minutes
-    const graceEligible = durationMinutes > 4;
+    // Grace period applies to rooms with duration >= 5 minutes (or extended rooms)
+    const graceEligible = durationMinutes >= 5;
     const inGracePeriod = rawExpired && graceEligible && graceSecondsLeft > 0;
     const isExpired = rawExpired && (!graceEligible || graceSecondsLeft <= 0);
 
