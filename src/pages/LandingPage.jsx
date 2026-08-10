@@ -69,23 +69,6 @@ export default function LandingPage() {
             Self-destructing rooms & secret links.
           </p>
 
-          <div style={{
-            marginTop: '12px',
-            fontSize: '13px',
-            fontWeight: 700,
-            color: 'var(--success)',
-            background: 'rgba(16,185,129,0.12)',
-            border: '1px solid rgba(16,185,129,0.35)',
-            borderRadius: '100px',
-            padding: '6px 16px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            boxShadow: '0 4px 14px rgba(16,185,129,0.2)',
-          }}>
-            ✨ 100% Completely Free — 24/7 Available for Everyone. No credit card, no sign-up, no restrictions.
-          </div>
-
           {/* Quick Dashboard link if already authenticated */}
           {isAuthenticated && (
             <div style={{
@@ -167,6 +150,27 @@ export default function LandingPage() {
             <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginTop: '4px' }}>24h Automatic Clean</h3>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
               All data is deleted immediately as soon as a room is closed or expires. Temporary identities auto-wipe every 24 hours.
+            </p>
+          </div>
+
+          {/* Bottom Card: 100% Free 24/7 */}
+          <div style={{
+            gridColumn: '1 / -1',
+            background: 'var(--surface)',
+            border: '1px solid var(--accent-border)',
+            borderRadius: '16px',
+            padding: '18px 24px',
+            boxShadow: '0 10px 24px rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justify: 'center',
+            gap: '12px',
+            textAlign: 'center',
+            marginTop: '8px'
+          }}>
+            <Sparkles size={18} color="var(--accent)" />
+            <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', lineHeight: 1.5, margin: 0 }}>
+              <span style={{ color: 'var(--accent)', fontWeight: 700 }}>100% Completely Free — 24/7 Available for Everyone.</span> No credit card, no sign-up, no restrictions.
             </p>
           </div>
 
