@@ -7,8 +7,12 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, memberMa
   const [votes, setVotes] = useState([]);
   const [minutesToAdd, setMinutesToAdd] = useState(15);
   const [requesterId, setRequesterId] = useState(null);
+  const [voteCreatedAt, setVoteCreatedAt] = useState(null);
   const [hasVoted, setHasVoted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [timeLeftMs, setTimeLeftMs] = useState(15000);
+  const [timerProgress, setTimerProgress] = useState(100);
+
   const { addToast } = useToast();
   const applyingRef = useRef(false);
 
@@ -26,10 +30,12 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, memberMa
         setVotes(data.map(v => v.user_id));
         setMinutesToAdd(data[0].minutes_to_add || 15);
         setRequesterId(data[0].user_id);
+        setVoteCreatedAt(data[0].voted_at);
         setHasVoted(data.some(v => v.user_id === userId));
       } else {
         setVotes([]);
         setRequesterId(null);
+        setVoteCreatedAt(null);
         setHasVoted(false);
       }
     };
@@ -87,7 +93,6 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, memberMa
       setHasVoted(true);
       addToast('Vote cast! Waiting for others…', 'success');
 
-      // Check if all have voted now
       const { data: currentVotes } = await supabase
         .from('extend_votes')
         .select('user_id')
@@ -107,17 +112,42 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, memberMa
     if (loading) return;
     try {
       await supabase.from('extend_votes').delete().eq('room_id', roomId);
-      addToast('Extension request cancelled', 'info');
+      addToast('Extension request expired/cancelled', 'info');
     } catch (err) {
       addToast(err.message || 'Failed to cancel', 'error');
     }
   };
+
+  // 15-second expiration timer for vote request
+  useEffect(() => {
+    if (!votes.length || !voteCreatedAt) return;
+
+    const DURATION_MS = 15000; // 15 seconds
+    const voteTime = new Date(voteCreatedAt).getTime();
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - voteTime;
+      const remaining = Math.max(0, DURATION_MS - elapsed);
+      const progress = (remaining / DURATION_MS) * 100;
+
+      setTimeLeftMs(remaining);
+      setTimerProgress(progress);
+
+      if (remaining <= 0) {
+        clearInterval(interval);
+        handleCancel();
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [votes.length, voteCreatedAt]);
 
   if (!votes.length) return null;
 
   const isRequester = requesterId === userId;
   const requesterName = memberMap[requesterId] || requesterId;
   const approvedCount = votes.length;
+  const secondsLeft = Math.ceil(timeLeftMs / 1000);
 
   return (
     <div style={{
@@ -125,7 +155,6 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, memberMa
       borderBottom: '2px solid rgba(16,185,129,0.3)',
       padding: '10px 14px',
       flexShrink: 0,
-      // Mobile-first: stack vertically on small screens
       display: 'flex',
       flexDirection: 'column',
       gap: '10px',
@@ -147,19 +176,19 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, memberMa
             </span>
           </p>
           <p style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {isRequester ? 'You requested this' : `Requested by ${requesterName}`} · {approvedCount}/{memberCount} approved
+            {isRequester ? 'You requested this' : `Requested by ${requesterName}`} · {approvedCount}/{memberCount} approved · Expires in <strong style={{ color: 'var(--accent)' }}>{secondsLeft}s</strong>
           </p>
         </div>
       </div>
 
-      {/* Vote progress bar */}
-      <div style={{ height: 3, borderRadius: 2, background: 'var(--surface-3)', overflow: 'hidden' }}>
+      {/* 15-second expiration progress bar */}
+      <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
         <div style={{
           height: '100%',
-          width: `${memberCount > 0 ? (approvedCount / memberCount) * 100 : 0}%`,
+          width: `${timerProgress}%`,
           background: 'var(--accent)',
           borderRadius: 2,
-          transition: 'width 0.4s ease',
+          transition: 'width 0.1s linear',
         }} />
       </div>
 
