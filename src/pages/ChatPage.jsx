@@ -109,18 +109,51 @@ export default function ChatPage() {
   useEffect(() => { epochKeyCacheRef.current = epochKeyCache; }, [epochKeyCache]);
 
   const effectiveDecrypt = useCallback(async (ciphertext, iv, epoch) => {
-    if (epoch && epochKeyCacheRef.current.has(epoch)) {
-      const key = epochKeyCacheRef.current.get(epoch);
-      const fromB64 = (b64) => { const binary = atob(b64); const bytes = new Uint8Array(binary.length); for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i); return bytes.buffer; };
+    const fromB64 = (b64) => {
       try {
-        const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(fromB64(iv)) }, key, fromB64(ciphertext));
+        const binary = atob(b64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return bytes.buffer;
+      } catch { return null; }
+    };
+
+    const tryDecrypt = async (key) => {
+      if (!key) return null;
+      try {
+        const ivBuf = fromB64(iv);
+        const ctBuf = fromB64(ciphertext);
+        if (!ivBuf || !ctBuf) return null;
+        const decrypted = await crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv: new Uint8Array(ivBuf) },
+          key,
+          ctBuf
+        );
         return new TextDecoder().decode(decrypted);
-      } catch {
-        // epoch key decrypt failed — fall through to base key
-      }
+      } catch { return null; }
+    };
+
+    // 1. Try matching epoch key if available
+    if (epoch && epochKeyCacheRef.current.has(epoch)) {
+      const res = await tryDecrypt(epochKeyCacheRef.current.get(epoch));
+      if (res !== null) return res;
     }
+
+    // 2. Try current sessionKey
+    if (sessionKey) {
+      const res = await tryDecrypt(sessionKey);
+      if (res !== null) return res;
+    }
+
+    // 3. Try all cached epoch keys
+    for (const k of epochKeyCacheRef.current.values()) {
+      const res = await tryDecrypt(k);
+      if (res !== null) return res;
+    }
+
+    // 4. Try base room key
     return decrypt(ciphertext, iv);
-  }, [decrypt]);
+  }, [sessionKey, decrypt]);
 
   // --- Feature 2 & 3: Presence with typing encryption + fingerprint detection ---
   const handleFingerprintChange = useCallback(({ userId: peerId, displayName: peerName }) => {
@@ -236,18 +269,28 @@ export default function ChatPage() {
   useEffect(() => {
     if (!keyLoaded || !messages.length) return;
     (async () => {
+      let changed = false;
       const updated = { ...decryptedMessages };
       for (const msg of messages) {
-        if (updated[msg.id]) continue;
+        if (updated[msg.id] && updated[msg.id] !== '[Decryption failed]') continue;
         try {
           if (msg.encrypted_content && msg.iv) {
-            updated[msg.id] = await effectiveDecrypt(msg.encrypted_content, msg.iv, msg.key_epoch || null);
+            const dec = await effectiveDecrypt(msg.encrypted_content, msg.iv, msg.key_epoch || null);
+            if (dec && updated[msg.id] !== dec) {
+              updated[msg.id] = dec;
+              changed = true;
+            }
           }
-        } catch { updated[msg.id] = '[Decryption failed]'; }
+        } catch {
+          if (updated[msg.id] !== '[Decryption failed]') {
+            updated[msg.id] = '[Decryption failed]';
+            changed = true;
+          }
+        }
       }
-      setDecryptedMessages(updated);
+      if (changed) setDecryptedMessages(updated);
     })();
-  }, [messages, keyLoaded, effectiveDecrypt]);
+  }, [messages, keyLoaded, effectiveDecrypt, sessionKey, epochKeyCache]);
 
   // Decrypt inline images
   useEffect(() => {
