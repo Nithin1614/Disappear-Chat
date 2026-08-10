@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables (contains Supabase keys)
+.env
+.env.local
+.env.production
+
+# Keep example safe to commit
+!.env.example
+
+# Vite cache
+.vite/
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.user
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
