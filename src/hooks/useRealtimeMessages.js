@@ -130,6 +130,15 @@ export function useRealtimeMessages(roomId) {
         console.error('[useRealtimeMessages] Error sending message:', insertError);
         throw new Error(insertError.message);
       }
+
+      // Optimistically append sent message to local state immediately so sender's chat window updates 0ms!
+      if (data) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === data.id)) return prev;
+          return [...prev, data];
+        });
+      }
+
       return data;
     },
     [roomId]

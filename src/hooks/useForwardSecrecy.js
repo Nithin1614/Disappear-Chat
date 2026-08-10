@@ -31,7 +31,7 @@ async function encryptSessionKeyPayload(sessionKeyBase64, baseKey) {
 }
 
 async function decryptSessionKeyPayload(encryptedKey, iv, baseKey) {
-  const fromBase64 = (b64) => { const bin = atob(b64); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return bytes.buffer; };
+  const fromBase64 = (b64) => { const bin = atob(b64); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = binary.charCodeAt(i); return bytes.buffer; };
   const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(fromBase64(iv)) }, baseKey, fromBase64(encryptedKey));
   return new TextDecoder().decode(decrypted);
 }
@@ -39,12 +39,8 @@ async function decryptSessionKeyPayload(encryptedKey, iv, baseKey) {
 /**
  * useForwardSecrecy — manages per-session ephemeral AES-256-GCM keys.
  *
- * CRITICAL FIX: All epoch keys stored in `epochKeyCacheRef` now ALWAYS use
- * String(epoch) keys so PostgreSQL bigint strings ("1786349000000") and JS numbers
- * (1786349000000) match strictly in Map lookups!
- *
- * Exports `epochCacheVersion` counter to notify ChatPage's decryption effect
- * whenever new session keys arrive via the late-joiner handshake.
+ * Handshake Fix: When a peer joins or re-enters, `broadcastAllKeys` sends ALL
+ * cached epoch keys so the joining user can decrypt every past message in the room.
  */
 export function useForwardSecrecy(roomId, userId, baseKey) {
   const [sessionKey, setSessionKey] = useState(null);
@@ -70,18 +66,21 @@ export function useForwardSecrecy(roomId, userId, baseKey) {
     setEpochCacheVersion(v => v + 1); // Triggers re-decryption in ChatPage
   }, []);
 
-  const broadcastCurrentKey = useCallback(async (broadcastChannel) => {
-    if (!baseKey || !broadcastChannel || !currentSessionKeyRef.current || !currentEpochRef.current) return;
+  // Broadcast ALL cached epoch keys to joining/re-entering peers
+  const broadcastAllKeys = useCallback(async (broadcastChannel) => {
+    if (!baseKey || !broadcastChannel) return;
     try {
-      const keyB64 = await exportKeyToBase64(currentSessionKeyRef.current);
-      const { encryptedKey, iv } = await encryptSessionKeyPayload(keyB64, baseKey);
-      broadcastChannel.send({
-        type: 'broadcast',
-        event: 'session_key_rotate',
-        payload: { encryptedKey, iv, epoch: currentEpochRef.current, from: userId },
-      });
+      for (const [epStr, keyObj] of epochKeyCacheRef.current.entries()) {
+        const keyB64 = await exportKeyToBase64(keyObj);
+        const { encryptedKey, iv } = await encryptSessionKeyPayload(keyB64, baseKey);
+        broadcastChannel.send({
+          type: 'broadcast',
+          event: 'session_key_rotate',
+          payload: { encryptedKey, iv, epoch: Number(epStr), from: userId },
+        });
+      }
     } catch (err) {
-      console.error('[ForwardSecrecy] Failed to re-broadcast key:', err);
+      console.error('[ForwardSecrecy] Failed to re-broadcast keys:', err);
     }
   }, [baseKey, userId]);
 
@@ -154,10 +153,10 @@ export function useForwardSecrecy(roomId, userId, baseKey) {
       }
     });
 
-    // Late-joiner handshake: peer asks for our current key
+    // Late-joiner / re-entry handshake: peer asks for our keys
     channel.on('broadcast', { event: 'request_session_key' }, async ({ payload }) => {
       if (cancelled || !payload || payload.from === userId) return;
-      await broadcastCurrentKey(channel);
+      await broadcastAllKeys(channel);
     });
 
     channel.subscribe(async (status) => {
@@ -180,7 +179,7 @@ export function useForwardSecrecy(roomId, userId, baseKey) {
         channelRef.current = null;
       }
     };
-  }, [roomId, userId, baseKey, rotateKey, broadcastCurrentKey, cacheKey]);
+  }, [roomId, userId, baseKey, rotateKey, broadcastAllKeys, cacheKey]);
 
   return {
     sessionKey,
