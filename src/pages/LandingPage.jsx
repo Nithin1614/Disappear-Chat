@@ -1,4 +1,4 @@
-import { Shield, Lock, Ghost, ArrowRight, Sparkles, Zap, ShieldCheck, Flame, Eye, LockKeyhole } from 'lucide-react';
+import { ShieldCheck, Flame, LockKeyhole, ArrowRight, Sparkles } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import UserSetup from '../components/auth/UserSetup';
 import Header from '../components/ui/Header';
@@ -18,141 +18,141 @@ export default function LandingPage() {
 
       {/* Ambient background glow */}
       <div style={{
-        position: 'absolute', top: '-120px', left: '50%', transform: 'translateX(-50%)',
-        width: '800px', height: '450px',
-        background: 'radial-gradient(circle, rgba(139,92,246,0.22) 0%, rgba(6,182,212,0.08) 50%, rgba(0,0,0,0) 75%)',
-        pointerEvents: 'none', zIndex: 0, filter: 'blur(60px)', opacity: 0.9
+        position: 'absolute', top: '-140px', left: '50%', transform: 'translateX(-50%)',
+        width: 'min(90vw, 700px)', height: '400px',
+        background: 'radial-gradient(circle, rgba(139,92,246,0.28) 0%, rgba(6,182,212,0.08) 55%, rgba(0,0,0,0) 80%)',
+        pointerEvents: 'none', zIndex: 0, filter: 'blur(70px)', opacity: 0.95
       }} />
 
       <Header />
 
       <main style={{
         flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-        padding: '48px 24px 80px', maxWidth: '1080px', margin: '0 auto', width: '100%', zIndex: 1
+        padding: '24px 16px 60px', maxWidth: '1040px', margin: '0 auto', width: '100%', zIndex: 1
       }}>
 
-        {/* Hero Section */}
-        <div style={{ textAlign: 'center', marginBottom: '56px', maxWidth: '760px' }}>
+        {/* Hero Section Header */}
+        <div style={{ textAlign: 'center', marginBottom: '32px', maxWidth: '680px', width: '100%' }}>
 
           {/* Badge */}
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '8px',
             background: 'var(--surface-2)', border: '1px solid var(--accent-border)',
-            borderRadius: '100px', padding: '6px 18px', marginBottom: '24px',
-            boxShadow: '0 0 24px rgba(139,92,246,0.25)',
+            borderRadius: '100px', padding: '5px 14px', marginBottom: '16px',
+            boxShadow: '0 0 20px rgba(139,92,246,0.2)',
           }}>
-            <Sparkles size={14} color="var(--accent)" />
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', letterSpacing: '0.02em' }}>
-              Zero Trace · Web Crypto E2E Encrypted · 24h Auto Clean
+            <Sparkles size={13} color="var(--accent)" />
+            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text)', letterSpacing: '0.02em' }}>
+              Zero Trace · E2E Encrypted · Auto-Vanish
             </span>
           </div>
 
           {/* Title */}
           <h1 style={{
-            fontSize: 'clamp(40px, 6.5vw, 68px)', fontWeight: 800, color: 'var(--text)',
-            letterSpacing: '-0.035em', lineHeight: 1.08, marginBottom: '22px'
+            fontSize: 'clamp(32px, 5.5vw, 56px)', fontWeight: 800, color: 'var(--text)',
+            letterSpacing: '-0.035em', lineHeight: 1.1, marginBottom: '14px'
           }}>
             Encrypted Messaging <br />
             <span style={{
-              background: 'linear-gradient(135deg, #a855f7 0%, #8b5cf6 40%, #06b6d4 100%)',
+              background: 'linear-gradient(135deg, #a855f7 0%, #8b5cf6 45%, #06b6d4 100%)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-              filter: 'drop-shadow(0 0 30px rgba(139,92,246,0.3))'
+              filter: 'drop-shadow(0 0 25px rgba(139,92,246,0.35))'
             }}>
               That Vanishes Forever.
             </span>
           </h1>
 
           <p style={{
-            fontSize: 'clamp(15px, 2.2vw, 18px)', color: 'var(--text-muted)',
-            maxWidth: '580px', margin: '0 auto 32px', lineHeight: 1.6
+            fontSize: 'clamp(14px, 1.8vw, 16px)', color: 'var(--text-muted)',
+            maxWidth: '520px', margin: '0 auto', lineHeight: 1.55
           }}>
-            Private rooms with countdown timers, one-time burn messages, and self-destruct links. When time runs out, data disintegrates across all devices.
+            Self-destructing rooms, burn messages & one-time links. Zero logs. Zero traces.
           </p>
 
-          {/* Quick Dashboard link if authenticated */}
+          {/* Quick Dashboard link if already authenticated */}
           {isAuthenticated && (
             <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: '14px',
+              display: 'inline-flex', alignItems: 'center', gap: '12px', marginTop: '20px',
               background: 'var(--surface-2)', border: '1px solid var(--accent-border)',
-              padding: '12px 24px', borderRadius: '14px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)'
+              padding: '10px 18px', borderRadius: '12px', boxShadow: '0 6px 20px rgba(0,0,0,0.3)',
+              flexWrap: 'wrap', justifyContent: 'center'
             }}>
-              <span style={{ fontSize: '14px', color: 'var(--text)' }}>
+              <span style={{ fontSize: '13px', color: 'var(--text)' }}>
                 Welcome back, <strong style={{ color: 'var(--accent)' }}>{displayName || userId}</strong>
               </span>
               <button
                 className="btn-primary"
                 onClick={handleGoToDashboard}
-                style={{ width: 'auto', padding: '8px 18px', fontSize: '13px' }}
+                style={{ width: 'auto', padding: '7px 16px', fontSize: '12px' }}
               >
-                Open Dashboard <ArrowRight size={14} />
+                Go to Dashboard <ArrowRight size={13} />
               </button>
             </div>
           )}
         </div>
 
-        {/* Feature Highlights Grid */}
-        <div style={{
-          width: '100%', maxWidth: '940px', marginBottom: '64px',
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px'
-        }}>
-
-          {/* Step 1 */}
-          <div style={{
-            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '28px 24px',
-            boxShadow: '0 16px 32px rgba(0,0,0,0.4)', transition: 'border-color 0.2s, transform 0.2s',
-          }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent-border)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-          >
-            <div style={{ width: 46, height: 46, borderRadius: '12px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '18px' }}>
-              <LockKeyhole size={22} color="var(--accent)" />
-            </div>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Security</span>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text)', margin: '6px 0 8px' }}>AES-256-GCM E2E</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55 }}>
-              Messages and files are encrypted client-side in your browser using Web Crypto API. Server never sees plaintext.
-            </p>
-          </div>
-
-          {/* Step 2 */}
-          <div style={{
-            background: 'var(--surface)', border: '1px solid var(--accent-border)', borderRadius: '20px', padding: '28px 24px',
-            boxShadow: '0 20px 40px rgba(139,92,246,0.15)', transition: 'transform 0.2s',
-            transform: 'translateY(-4px)'
-          }}>
-            <div style={{ width: 46, height: 46, borderRadius: '12px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '18px' }}>
-              <Flame size={22} color="var(--danger)" />
-            </div>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--danger)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Ephemerality</span>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text)', margin: '6px 0 8px' }}>Burn & Disintegrate</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55 }}>
-              One-time burn messages, self-destruct secret links, and room timer snaps disintegrate data into particles.
-            </p>
-          </div>
-
-          {/* Step 3 */}
-          <div style={{
-            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '28px 24px',
-            boxShadow: '0 16px 32px rgba(0,0,0,0.4)', transition: 'border-color 0.2s, transform 0.2s',
-          }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--cyan)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-          >
-            <div style={{ width: 46, height: 46, borderRadius: '12px', background: 'var(--cyan-dim)', border: '1px solid rgba(6,182,212,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '18px' }}>
-              <ShieldCheck size={22} color="var(--cyan)" />
-            </div>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Privacy</span>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text)', margin: '6px 0 8px' }}>24h Identity Auto-Clean</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55 }}>
-              All temporary user identities and room traces are wiped every 24 hours. Zero tracking, zero logs.
-            </p>
-          </div>
-
+        {/* Primary Call to Action: Identity Setup Box (Rendered immediately for fast onboarding!) */}
+        <div style={{ width: '100%', maxWidth: '420px', marginBottom: '48px' }}>
+          <UserSetup />
         </div>
 
-        {/* Identity Setup Form (Create Identity & Login with ID at bottom) */}
-        <div style={{ width: '100%', maxWidth: '440px' }}>
-          <UserSetup />
+        {/* Feature Highlights Grid — Clean, responsive 3 cards */}
+        <div style={{
+          width: '100%', maxWidth: '920px',
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px'
+        }}>
+
+          {/* Card 1 */}
+          <div style={{
+            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '22px 20px',
+            boxShadow: '0 10px 24px rgba(0,0,0,0.3)', transition: 'border-color 0.2s, transform 0.2s',
+            display: 'flex', flexDirection: 'column', gap: '8px'
+          }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent-border)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+          >
+            <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <LockKeyhole size={18} color="var(--accent)" />
+            </div>
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginTop: '4px' }}>End-to-End Encrypted</h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              All text & files are encrypted in your browser before sending. No plaintext touches the server.
+            </p>
+          </div>
+
+          {/* Card 2 */}
+          <div style={{
+            background: 'var(--surface)', border: '1px solid var(--accent-border)', borderRadius: '16px', padding: '22px 20px',
+            boxShadow: '0 12px 28px rgba(139,92,246,0.15)', transition: 'transform 0.2s',
+            display: 'flex', flexDirection: 'column', gap: '8px'
+          }}>
+            <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Flame size={18} color="var(--danger)" />
+            </div>
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginTop: '4px' }}>Self-Destruct & Burn</h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              One-time view burn messages & secret links dissolve into particles upon expiration.
+            </p>
+          </div>
+
+          {/* Card 3 */}
+          <div style={{
+            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '22px 20px',
+            boxShadow: '0 10px 24px rgba(0,0,0,0.3)', transition: 'border-color 0.2s, transform 0.2s',
+            display: 'flex', flexDirection: 'column', gap: '8px'
+          }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--cyan)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+          >
+            <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'var(--cyan-dim)', border: '1px solid rgba(6,182,212,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ShieldCheck size={18} color="var(--cyan)" />
+            </div>
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginTop: '4px' }}>24h Automatic Clean</h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              Temporary identities & room traces are wiped every 24 hours. Complete privacy & safety.
+            </p>
+          </div>
+
         </div>
 
       </main>
