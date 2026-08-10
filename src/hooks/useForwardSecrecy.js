@@ -39,36 +39,35 @@ async function decryptSessionKeyPayload(encryptedKey, iv, baseKey) {
 /**
  * useForwardSecrecy — manages per-session ephemeral AES-256-GCM keys.
  *
- * FIX: Now exports `epochCacheVersion` (a counter that increments whenever
- * a new key is added to the cache). ChatPage's decryption effect depends on
- * this counter, so it re-runs automatically when late-joiner keys arrive.
+ * CRITICAL FIX: All epoch keys stored in `epochKeyCacheRef` now ALWAYS use
+ * String(epoch) keys so PostgreSQL bigint strings ("1786349000000") and JS numbers
+ * (1786349000000) match strictly in Map lookups!
  *
- * FIX: `request_session_key` handshake — when a late-joiner subscribes they
- * broadcast this event, and any already-present participant re-sends their
- * current key so the late-joiner can decrypt already-stored messages.
+ * Exports `epochCacheVersion` counter to notify ChatPage's decryption effect
+ * whenever new session keys arrive via the late-joiner handshake.
  */
 export function useForwardSecrecy(roomId, userId, baseKey) {
   const [sessionKey, setSessionKey] = useState(null);
   const [currentEpoch, setCurrentEpoch] = useState(0);
   const [isReady, setIsReady] = useState(false);
-  // *** KEY FIX: version counter that ticks every time a key is added to cache ***
   const [epochCacheVersion, setEpochCacheVersion] = useState(0);
 
-  const epochKeyCacheRef = useRef(new Map()); // epoch -> CryptoKey
+  const epochKeyCacheRef = useRef(new Map()); // String(epoch) -> CryptoKey
   const channelRef = useRef(null);
   const rotationTimerRef = useRef(null);
   const onRotateCallbackRef = useRef(null);
 
-  // Stable refs so channel callbacks always see latest values without stale closures
   const currentEpochRef = useRef(0);
   const currentSessionKeyRef = useRef(null);
   useEffect(() => { currentEpochRef.current = currentEpoch; }, [currentEpoch]);
   useEffect(() => { currentSessionKeyRef.current = sessionKey; }, [sessionKey]);
 
-  // Helper: add key to cache AND bump version so decryption effect re-runs
+  // Helper: add key to cache using String(epoch) key & bump version counter
   const cacheKey = useCallback((epoch, key) => {
-    epochKeyCacheRef.current.set(epoch, key);
-    setEpochCacheVersion(v => v + 1); // *** triggers re-decryption in ChatPage ***
+    if (!epoch || !key) return;
+    const epochStr = String(epoch);
+    epochKeyCacheRef.current.set(epochStr, key);
+    setEpochCacheVersion(v => v + 1); // Triggers re-decryption in ChatPage
   }, []);
 
   const broadcastCurrentKey = useCallback(async (broadcastChannel) => {
@@ -102,11 +101,11 @@ export function useForwardSecrecy(roomId, userId, baseKey) {
 
       // Prune old keys (keep 2 rotation windows)
       const cutoff = newEpoch - KEY_ROTATION_MS * 2;
-      for (const [ep] of epochKeyCacheRef.current) {
-        if (ep < cutoff) epochKeyCacheRef.current.delete(ep);
+      for (const [epStr] of epochKeyCacheRef.current) {
+        if (Number(epStr) < cutoff) epochKeyCacheRef.current.delete(epStr);
       }
 
-      cacheKey(newEpoch, newKey); // bumps epochCacheVersion
+      cacheKey(newEpoch, newKey);
 
       currentEpochRef.current = newEpoch;
       currentSessionKeyRef.current = newKey;
@@ -133,21 +132,21 @@ export function useForwardSecrecy(roomId, userId, baseKey) {
       config: { broadcast: { self: false } },
     });
 
-    // Receive session key from any peer (rotation or handshake response)
+    // Receive session key from peer (rotation or handshake response)
     channel.on('broadcast', { event: 'session_key_rotate' }, async ({ payload }) => {
       if (cancelled || !payload || payload.from === userId) return;
       try {
         const decryptedKeyB64 = await decryptSessionKeyPayload(payload.encryptedKey, payload.iv, baseKey);
         const importedKey = await importKeyFromBase64(decryptedKeyB64);
 
-        // Always cache — even older epochs — so late joiners can decrypt past msgs
-        cacheKey(payload.epoch, importedKey); // *** bumps epochCacheVersion ***
+        // Always cache under String(payload.epoch)
+        cacheKey(payload.epoch, importedKey);
 
-        if (!cancelled && payload.epoch >= currentEpochRef.current) {
+        if (!cancelled && Number(payload.epoch) >= Number(currentEpochRef.current)) {
           currentSessionKeyRef.current = importedKey;
-          currentEpochRef.current = payload.epoch;
+          currentEpochRef.current = Number(payload.epoch);
           setSessionKey(importedKey);
-          setCurrentEpoch(payload.epoch);
+          setCurrentEpoch(Number(payload.epoch));
           setIsReady(true);
         }
       } catch (err) {
@@ -155,7 +154,7 @@ export function useForwardSecrecy(roomId, userId, baseKey) {
       }
     });
 
-    // Late-joiner handshake: peer asks for the current key
+    // Late-joiner handshake: peer asks for our current key
     channel.on('broadcast', { event: 'request_session_key' }, async ({ payload }) => {
       if (cancelled || !payload || payload.from === userId) return;
       await broadcastCurrentKey(channel);
@@ -164,11 +163,11 @@ export function useForwardSecrecy(roomId, userId, baseKey) {
     channel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED' && !cancelled) {
         channelRef.current = channel;
-        // Generate and broadcast our own key
+        // Generate & broadcast our session key
         await rotateKey(channel);
-        // Also request any existing peer's key (we might be the late joiner)
+        // Request any existing peer's session key (in case we joined second or rejoined)
         channel.send({ type: 'broadcast', event: 'request_session_key', payload: { from: userId } });
-        // Schedule key rotation every 5 minutes
+        // Schedule rotation every 5 minutes
         rotationTimerRef.current = setInterval(() => rotateKey(channel), KEY_ROTATION_MS);
       }
     });
@@ -187,7 +186,7 @@ export function useForwardSecrecy(roomId, userId, baseKey) {
     sessionKey,
     currentEpoch,
     epochKeyCache: epochKeyCacheRef.current,
-    epochCacheVersion, // *** new: lets ChatPage react when new keys arrive ***
+    epochCacheVersion,
     isReady,
     onRotate,
   };

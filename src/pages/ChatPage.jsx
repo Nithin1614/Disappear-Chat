@@ -134,10 +134,18 @@ export default function ChatPage() {
       } catch { return null; }
     };
 
-    // 1. Try matching epoch key if available
-    if (epoch && epochKeyCacheRef.current.has(epoch)) {
-      const res = await tryDecrypt(epochKeyCacheRef.current.get(epoch));
-      if (res !== null) return res;
+    // 1. Try matching epoch key if available (coercing String and Number representations)
+    if (epoch) {
+      const epochStr = String(epoch);
+      const epochNum = Number(epoch);
+      if (epochKeyCacheRef.current.has(epochStr)) {
+        const res = await tryDecrypt(epochKeyCacheRef.current.get(epochStr));
+        if (res !== null) return res;
+      }
+      if (!isNaN(epochNum) && epochKeyCacheRef.current.has(epochNum)) {
+        const res = await tryDecrypt(epochKeyCacheRef.current.get(epochNum));
+        if (res !== null) return res;
+      }
     }
 
     // 2. Try current sessionKey
@@ -152,7 +160,7 @@ export default function ChatPage() {
       if (res !== null) return res;
     }
 
-    // 4. Try base room key
+    // 4. Try base room key (cryptoKey)
     return decrypt(ciphertext, iv);
   }, [sessionKey, decrypt]);
 
