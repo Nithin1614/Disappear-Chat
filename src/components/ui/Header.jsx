@@ -3,7 +3,7 @@ import { useUser } from '../../context/UserContext';
 import ThemeToggle from './ThemeToggle';
 
 export default function Header() {
-  const { userId, clearUser, isAuthenticated } = useUser();
+  const { userId, displayName, clearUser, isAuthenticated } = useUser();
 
   const handleLogout = () => {
     clearUser();
@@ -52,16 +52,15 @@ export default function Header() {
           {isAuthenticated && (
             <>
               <div style={{
-                fontFamily: 'JetBrains Mono, monospace',
                 fontSize: '13px',
-                fontWeight: 500,
-                padding: '4px 10px',
-                borderRadius: '6px',
+                fontWeight: 600,
+                padding: '4px 12px',
+                borderRadius: '8px',
                 background: 'var(--surface-2)',
                 border: '1px solid var(--border)',
                 color: 'var(--accent)',
               }}>
-                {userId}
+                {displayName || userId}
               </div>
               <button
                 onClick={handleLogout}

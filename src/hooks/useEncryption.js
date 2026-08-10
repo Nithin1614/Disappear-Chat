@@ -94,5 +94,5 @@ export function useEncryption(roomCode = null) {
     return cryptoDecryptFile(encryptedArrayBuffer, iv, cryptoKeyRef.current);
   }, []);
 
-  return { encrypt, decrypt, encryptFile, decryptFile, keyLoaded, error };
+  return { encrypt, decrypt, encryptFile, decryptFile, keyLoaded, cryptoKey: cryptoKeyRef.current, error };
 }

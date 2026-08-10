@@ -97,7 +97,7 @@ export function useRealtimeMessages(roomId) {
   }, [roomId]);
 
   const sendMessage = useCallback(
-    async ({ encryptedContent, iv, type = 'text', senderId, fileUrl = null, fileName = null, fileSize = null }) => {
+    async ({ encryptedContent, iv, type = 'text', senderId, fileUrl = null, fileName = null, fileSize = null, fileIv = null }) => {
       const { data, error: insertError } = await supabase
         .from('messages')
         .insert({
@@ -109,6 +109,7 @@ export function useRealtimeMessages(roomId) {
           file_url: fileUrl,
           file_name: fileName,
           file_size: fileSize,
+          file_iv: fileIv || iv,
           is_read: false,
         })
         .select()
