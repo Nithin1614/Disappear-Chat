@@ -5,8 +5,8 @@ import { useToast } from '../../context/ToastContext';
 
 /**
  * Floating chat request notifications & direct chat synchronization listener.
- * - Listens for incoming chat requests (target_id = userId) -> displays floating alert card.
- * - Listens for outgoing chat requests (sender_id = userId) -> when target accepts, automatically navigates sender into room!
+ * Uses Realtime Broadcast + Postgres Changes + Polling Fallback to guarantee
+ * instant 0-second notifications without requiring browser refresh!
  */
 export default function ChatRequestsNotifier({ userId }) {
   const [requests, setRequests] = useState([]);
@@ -30,30 +30,35 @@ export default function ChatRequestsNotifier({ userId }) {
 
     fetchRequests();
 
-    const channel = supabase
-      .channel(`chat_reqs_in:${userId}`)
+    // 1. Postgres changes listener
+    const postgresChannel = supabase
+      .channel(`chat_reqs_pg:${userId}`)
       .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'chat_requests',
-        filter: `target_id=eq.${userId}`,
-      }, fetchRequests)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'chat_requests',
-        filter: `target_id=eq.${userId}`,
-      }, fetchRequests)
-      .on('postgres_changes', {
-        event: 'DELETE',
+        event: '*',
         schema: 'public',
         table: 'chat_requests',
         filter: `target_id=eq.${userId}`,
       }, fetchRequests)
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [userId]);
+    // 2. Instant Realtime Broadcast channel (0ms latency trigger)
+    const broadcastChannel = supabase
+      .channel(`user_direct_notify:${userId}`)
+      .on('broadcast', { event: 'new_chat_request' }, (payload) => {
+        addToast(`🔔 New chat request from ${payload.payload?.sender_name || 'a user'}!`, 'info');
+        fetchRequests();
+      })
+      .subscribe();
+
+    // 3. Fast 2.5s poll fallback (backup safety net)
+    const pollInterval = setInterval(fetchRequests, 2500);
+
+    return () => {
+      supabase.removeChannel(postgresChannel);
+      supabase.removeChannel(broadcastChannel);
+      clearInterval(pollInterval);
+    };
+  }, [userId, addToast]);
 
   // Outgoing requests listener (sender_id = userId) — redirects sender as soon as target accepts!
   useEffect(() => {
@@ -74,7 +79,7 @@ export default function ChatRequestsNotifier({ userId }) {
             if (!window.location.pathname.includes(`/room/${roomCode}`)) {
               window.location.href = `/room/${roomCode}`;
             }
-          }, 600);
+          }, 400);
         }
       })
       .subscribe();
@@ -136,7 +141,6 @@ export default function ChatRequestsNotifier({ userId }) {
       e.preventDefault();
       e.stopPropagation();
     }
-    // Remove from UI immediately so it vanishes instantly!
     setRequests(prev => prev.filter(r => r.id !== req.id));
     addToast('Request dismissed', 'info');
 
@@ -146,7 +150,7 @@ export default function ChatRequestsNotifier({ userId }) {
         .update({ status: 'declined' })
         .eq('id', req.id);
     } catch {
-      // background update silently handled
+      // background handle
     }
   };
 

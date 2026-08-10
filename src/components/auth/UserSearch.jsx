@@ -17,7 +17,7 @@ export default function UserSearch() {
   const { userId, displayName } = useUser();
   const { addToast } = useToast();
 
-  // Reset states on mount (e.g., when returning back to Dashboard from a chat room)
+  // Reset states on mount
   useEffect(() => {
     setRequestingId(null);
     setActiveRequest(null);
@@ -88,6 +88,18 @@ export default function UserSearch() {
 
       if (reqErr) throw reqErr;
 
+      // Broadcast instant 0ms notification to target user
+      const notifyChannel = supabase.channel(`user_direct_notify:${targetUser.user_id}`);
+      notifyChannel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          notifyChannel.send({
+            type: 'broadcast',
+            event: 'new_chat_request',
+            payload: { sender_name: displayName || userId, roomCode },
+          });
+        }
+      });
+
       setActiveRequest({
         id: reqData.id,
         targetName: targetUser.display_name || targetUser.user_id,
@@ -100,7 +112,6 @@ export default function UserSearch() {
     } catch (err) {
       addToast(err.message || 'Failed to send chat request', 'error');
     } finally {
-      // Always reset requestingId so button is never stuck in loading state!
       setRequestingId(null);
     }
   };
