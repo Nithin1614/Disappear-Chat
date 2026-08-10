@@ -153,25 +153,43 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* Bottom Card: 100% Free 24/7 */}
+          {/* Bottom Card: 100% Free 24/7 Animated Banner */}
           <div style={{
             gridColumn: '1 / -1',
-            background: 'var(--surface)',
-            border: '1px solid var(--accent-border)',
-            borderRadius: '16px',
-            padding: '18px 24px',
-            boxShadow: '0 10px 24px rgba(0,0,0,0.3)',
+            background: 'linear-gradient(135deg, rgba(16,185,129,0.14) 0%, rgba(139,92,246,0.14) 100%)',
+            border: '2px solid rgba(16,185,129,0.45)',
+            borderRadius: '18px',
+            padding: '24px 28px',
+            boxShadow: '0 12px 32px rgba(16,185,129,0.2)',
             display: 'flex',
             alignItems: 'center',
-            justify: 'center',
-            gap: '12px',
+            justifyContent: 'center',
+            gap: '14px',
             textAlign: 'center',
-            marginTop: '8px'
+            marginTop: '12px',
+            animation: 'freeBannerPulse 3s ease-in-out infinite'
           }}>
-            <Sparkles size={18} color="var(--accent)" />
-            <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', lineHeight: 1.5, margin: 0 }}>
-              <span style={{ color: 'var(--accent)', fontWeight: 700 }}>100% Completely Free — 24/7 Available for Everyone.</span> No credit card, no sign-up, no restrictions.
+            <Sparkles size={24} color="var(--success)" style={{ flexShrink: 0 }} />
+            <p style={{ fontSize: 'clamp(16px, 2.2vw, 20px)', fontWeight: 700, color: 'var(--text)', lineHeight: 1.4, margin: 0 }}>
+              <span style={{
+                background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 50%, #a855f7 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontWeight: 800,
+                fontSize: 'clamp(17px, 2.4vw, 22px)'
+              }}>
+                ✨ 100% Completely Free — 24/7 Available for Everyone.
+              </span>{' '}
+              <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>
+                No credit card, no sign-up, no restrictions.
+              </span>
             </p>
+            <style>{`
+              @keyframes freeBannerPulse {
+                0%, 100% { transform: scale(1); boxShadow: 0 12px 32px rgba(16,185,129,0.2); borderColor: rgba(16,185,129,0.45); }
+                50% { transform: scale(1.015); boxShadow: 0 16px 40px rgba(16,185,129,0.35); borderColor: rgba(16,185,129,0.7); }
+              }
+            `}</style>
           </div>
 
         </div>
