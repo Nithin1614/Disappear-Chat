@@ -52,13 +52,13 @@ export default function LandingPage() {
             fontSize: 'clamp(32px, 5.5vw, 56px)', fontWeight: 800, color: 'var(--text)',
             letterSpacing: '-0.035em', lineHeight: 1.1, marginBottom: '14px'
           }}>
-            Encrypted Messaging <br />
+            Zero-Trace Private Chat <br />
             <span style={{
               background: 'linear-gradient(135deg, #a855f7 0%, #8b5cf6 45%, #06b6d4 100%)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
               filter: 'drop-shadow(0 0 25px rgba(139,92,246,0.35))'
             }}>
-              That Vanishes Forever.
+              Built to Disappear.
             </span>
           </h1>
 
