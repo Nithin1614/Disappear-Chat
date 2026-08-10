@@ -175,7 +175,7 @@ export default function ChatPage() {
   }, [addToast]);
   const onDmsCountdown = useCallback((secs) => setDmsCountdown(secs), []);
   const onDmsDestroy = useCallback(() => {
-    addToast('💀 Room auto-destroyed due to inactivity.', 'error');
+    addToast('Room auto-destroyed due to inactivity.', 'error');
     setTimeout(() => { window.location.href = '/dashboard'; }, 1500);
   }, [addToast]);
 

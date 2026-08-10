@@ -1,13 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-const INACTIVITY_LOCK_MS = 60 * 1000; // 60 seconds of inactivity
+const INACTIVITY_LOCK_MS = 90 * 1000; // 90 seconds of inactivity
 
 /**
- * useAccessLock — hides chat content when the user is inactive for 60 seconds.
+ * useAccessLock — hides chat content when the user is inactive for 90 seconds.
  *
- * NOTE: Tab visibility lock was intentionally removed — locking on every tab
- * switch is too aggressive for a chat app (users frequently switch tabs).
- * Only locks on genuine inactivity (no mouse/keyboard/touch/scroll for 60s).
+ * Remains locked until the user explicitly clicks the overlay to unlock,
+ * or until the room is terminated (at 7 mins inactivity).
  *
  * Returns `isLocked` boolean. Calling `unlock()` dismisses the overlay.
  */

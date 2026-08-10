@@ -1,12 +1,12 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
-const INACTIVITY_MS = 2 * 60 * 1000;       // 2 minutes total
-const WARNING_AT_MS = 30 * 1000;            // warn when 30s left (at 1m30s)
+const INACTIVITY_MS = 7 * 60 * 1000;       // 7 minutes total inactivity
+const WARNING_AT_MS = 30 * 1000;            // warn when 30s left (at 6m30s)
 const FINAL_COUNTDOWN_AT_MS = 10 * 1000;   // red countdown when 10s left
 
 /**
- * useDeadManSwitch — auto-destroys the room after 2 minutes of zero activity.
+ * useDeadManSwitch — auto-destroys the room after 7 minutes of zero activity.
  *
  * Callbacks (onWarn, onCountdown, onDestroy) are stored in refs so they never
  * cause the interval useEffect to re-run (which would restart the timer).
