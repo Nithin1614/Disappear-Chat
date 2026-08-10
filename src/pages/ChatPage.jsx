@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Shield, Share2, AlertTriangle, ArrowLeft, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useUser } from '../context/UserContext';
@@ -27,7 +27,6 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 export default function ChatPage() {
   const { roomCode } = useParams();
-  const navigate = useNavigate();
   const { userId, displayName, isAuthenticated } = useUser();
   const { addToast } = useToast();
 
@@ -69,7 +68,7 @@ export default function ChatPage() {
   const { triggerSnap } = useThanosSnap();
 
   // Auth redirect
-  useEffect(() => { if (!isAuthenticated) navigate('/'); }, [isAuthenticated, navigate]);
+  useEffect(() => { if (!isAuthenticated) window.location.href = '/'; }, [isAuthenticated]);
 
   // Fetch room details
   useEffect(() => {
@@ -214,7 +213,7 @@ export default function ChatPage() {
         <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text)', marginBottom: '6px' }}>{roomError}</h2>
         <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>The room may have expired or the link is invalid.</p>
       </div>
-      <button className="btn-primary" style={{ width: 'auto', padding: '10px 24px' }} onClick={() => navigate('/dashboard')}>
+      <button className="btn-primary" style={{ width: 'auto', padding: '10px 24px' }} onClick={() => window.location.href = '/dashboard'}>
         <ArrowLeft size={15} /> Back to Dashboard
       </button>
     </div>
@@ -253,7 +252,7 @@ export default function ChatPage() {
             <button className="btn-primary" onClick={handlePasteLink}>
               Paste Full Invite Link
             </button>
-            <button className="btn-ghost" onClick={() => navigate('/dashboard')}>
+            <button className="btn-ghost" onClick={() => window.location.href = '/dashboard'}>
               <ArrowLeft size={15} /> Back to Dashboard
             </button>
           </div>
@@ -281,8 +280,8 @@ export default function ChatPage() {
           background: 'var(--surface)', flexShrink: 0, gap: '12px', flexWrap: 'wrap'
         }}>
           {/* Left info */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <button onClick={() => navigate('/dashboard')} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '6px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button onClick={() => window.location.href = '/dashboard'} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '6px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}>
               <ArrowLeft size={16} />
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -410,7 +409,7 @@ export default function ChatPage() {
       )}
 
       {/* Thanos snap — redirects to Home page (/) upon completion */}
-      <ThanosSnap isExpired={snapTriggered} onRedirect={() => navigate('/')} />
+      <ThanosSnap isExpired={snapTriggered} onRedirect={() => window.location.href = '/'} />
     </div>
   );
 }

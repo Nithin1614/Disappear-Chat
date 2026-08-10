@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { RefreshCw, ArrowRight, UserCheck } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { generateUserId, isValidUserId } from '../../lib/userIdGenerator';
@@ -14,7 +13,6 @@ export default function UserSetup() {
   const [loading, setLoading] = useState(false);
   const { setUser } = useUser();
   const { addToast } = useToast();
-  const navigate = useNavigate();
 
   const handleCreate = async () => {
     if (loading) return;
@@ -36,7 +34,7 @@ export default function UserSetup() {
       if (error) throw error;
       setUser(generatedId, trimmedName);
       addToast(`Identity created! Welcome, ${trimmedName}.`, 'success');
-      navigate('/dashboard');
+      window.location.href = '/dashboard';
     } catch (err) {
       addToast(err.message || 'Failed to create identity', 'error');
     } finally { setLoading(false); }
@@ -53,7 +51,7 @@ export default function UserSetup() {
       await supabase.from('users').update({ last_seen: new Date().toISOString() }).eq('user_id', id);
       setUser(data.user_id, data.display_name || id);
       addToast(`Welcome back, ${data.display_name || id}!`, 'success');
-      navigate('/dashboard');
+      window.location.href = '/dashboard';
     } catch (err) {
       addToast(err.message || 'Login failed', 'error');
     } finally { setLoading(false); }
@@ -141,7 +139,7 @@ export default function UserSetup() {
                 type="text"
                 value={loginId}
                 onChange={e => setLoginId(e.target.value.toLowerCase())}
-                placeholder="abc123"
+                placeholder="ENTER USER ID"
                 maxLength={6}
                 onKeyDown={e => e.key === 'Enter' && handleLogin()}
               />

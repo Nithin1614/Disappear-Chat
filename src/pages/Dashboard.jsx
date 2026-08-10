@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Copy, User, Plus, LogIn, Search } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { useToast } from '../context/ToastContext';
@@ -23,9 +22,13 @@ const Section = ({ title, icon: Icon, children }) => (
 export default function Dashboard() {
   const { userId, displayName, isAuthenticated } = useUser();
   const { addToast } = useToast();
-  const navigate = useNavigate();
 
-  useEffect(() => { if (!isAuthenticated) navigate('/'); }, [isAuthenticated, navigate]);
+  useEffect(() => {
+    if (!isAuthenticated) {
+      window.location.href = '/';
+    }
+  }, [isAuthenticated]);
+
   if (!isAuthenticated) return null;
 
   const copyUserId = async () => {

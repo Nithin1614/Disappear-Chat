@@ -1,13 +1,18 @@
 import { Shield, LogOut } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
 import ThemeToggle from './ThemeToggle';
 
 export default function Header() {
   const { userId, clearUser, isAuthenticated } = useUser();
-  const navigate = useNavigate();
 
-  const handleLogout = () => { clearUser(); navigate('/'); };
+  const handleLogout = () => {
+    clearUser();
+    window.location.href = '/';
+  };
+
+  const handleLogoClick = () => {
+    window.location.href = isAuthenticated ? '/dashboard' : '/';
+  };
 
   return (
     <header style={{
@@ -28,7 +33,7 @@ export default function Header() {
       }}>
         {/* Logo */}
         <button
-          onClick={() => navigate(isAuthenticated ? '/dashboard' : '/')}
+          onClick={handleLogoClick}
           style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', background: 'none', border: 'none' }}
         >
           <div style={{

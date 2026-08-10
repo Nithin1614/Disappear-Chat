@@ -1,4 +1,3 @@
-import { useNavigate } from 'react';
 import { Shield, Lock, Timer, Ghost, ArrowRight, Zap, EyeOff, KeyRound } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import UserSetup from '../components/auth/UserSetup';
@@ -29,7 +28,10 @@ const FEATURES = [
 
 export default function LandingPage() {
   const { isAuthenticated, userId } = useUser();
-  const navigate = useNavigate();
+
+  const handleGoToDashboard = () => {
+    window.location.href = '/dashboard';
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', overflowX: 'hidden', position: 'relative' }}>
@@ -87,7 +89,7 @@ export default function LandingPage() {
               </span>
               <button
                 className="btn-primary"
-                onClick={() => navigate('/dashboard')}
+                onClick={handleGoToDashboard}
                 style={{ width: 'auto', padding: '8px 16px', fontSize: '13px' }}
               >
                 Go to Dashboard <ArrowRight size={14} />
