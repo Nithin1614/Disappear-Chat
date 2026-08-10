@@ -13,7 +13,7 @@ export default function LandingPage() {
   return (
     <div style={{
       minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column',
-      overflowX: 'hidden', position: 'relative'
+      overflowX: 'hidden', position: 'relative', scrollBehavior: 'smooth'
     }}>
 
       {/* Ambient background glow */}
