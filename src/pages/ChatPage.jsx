@@ -20,6 +20,7 @@ import DragDropZone from '../components/chat/DragDropZone';
 import MemberList from '../components/chat/MemberList';
 import CountdownBadge from '../components/timer/CountdownBadge';
 import ExtendTimeVote from '../components/timer/ExtendTimeVote';
+import ExtendVoteBanner from '../components/timer/ExtendVoteBanner';
 import QRCodeModal from '../components/room/QRCodeModal';
 import ThanosSnap from '../components/effects/ThanosSnap';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -49,7 +50,7 @@ export default function ChatPage() {
   const messagesEndRef = useRef(null);
   const prevMessageCountRef = useRef(0);
 
-  // --- All hooks (features preserved) ---
+  // --- Hooks Preserved ---
   const { encrypt, decrypt, encryptFile: encryptFileHook, keyLoaded, error: keyError } = useEncryption();
   const { messages, sendMessage, loading: messagesLoading } = useRealtimeMessages(room?.id);
   const { onlineMembers, typingUsers, trackTyping } = usePresence(room?.id, userId, displayName);
@@ -58,10 +59,10 @@ export default function ChatPage() {
   const { downloadFile } = useFileUpload(room?.id);
   const { triggerSnap } = useThanosSnap();
 
-  // Redirect if unauthenticated
+  // Auth redirect
   useEffect(() => { if (!isAuthenticated) navigate('/'); }, [isAuthenticated, navigate]);
 
-  // Fetch room
+  // Fetch room details
   useEffect(() => {
     if (!roomCode) return;
     let pollInterval;
@@ -86,12 +87,12 @@ export default function ChatPage() {
     pollInterval = setInterval(async () => {
       const { data } = await supabase.from('rooms').select('*').eq('room_code', roomCode).single();
       if (data) setRoom(data);
-    }, 5000);
+    }, 4000);
 
     return () => clearInterval(pollInterval);
   }, [roomCode, userId]);
 
-  // Decrypt messages as they arrive
+  // Decrypt messages
   useEffect(() => {
     if (!keyLoaded || !messages.length) return;
     (async () => {
@@ -106,7 +107,7 @@ export default function ChatPage() {
     })();
   }, [messages, keyLoaded, decrypt]);
 
-  // Sound for new messages from others
+  // Sound notification
   useEffect(() => {
     if (messages.length > prevMessageCountRef.current) {
       const latest = messages[messages.length - 1];
@@ -120,7 +121,7 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, decryptedMessages]);
 
-  // Mark messages as read
+  // Mark unread
   useEffect(() => {
     if (!room?.id || !userId || !messages.length) return;
     const unread = messages.filter(m => m.sender_id !== userId && !m.is_read);
@@ -131,7 +132,7 @@ export default function ChatPage() {
     return () => clearTimeout(t);
   }, [messages, room?.id, userId]);
 
-  // Timer warning toast
+  // Warning toast
   useEffect(() => {
     if (countdown.timerStarted && countdown.totalSeconds <= TIMER_WARNING_SECONDS && countdown.totalSeconds > 0 && !warningShown) {
       setWarningShown(true);
@@ -139,7 +140,7 @@ export default function ChatPage() {
     }
   }, [countdown, warningShown, addToast]);
 
-  // Thanos snap on expiry — triggers canvas particle disintegration then overlay
+  // Thanos snap trigger
   useEffect(() => {
     if (countdown.isExpired && countdown.timerStarted && !snapTriggered) {
       setSnapTriggered(true);
@@ -149,14 +150,14 @@ export default function ChatPage() {
     }
   }, [countdown.isExpired, countdown.timerStarted, snapTriggered, triggerSnap]);
 
-  // Send text
+  // Send text message
   const handleSendMessage = useCallback(async (text) => {
     if (!keyLoaded || !room?.id) return;
     const { ciphertext, iv } = await encrypt(text);
     await sendMessage({ encryptedContent: ciphertext, iv, type: 'text', senderId: userId });
   }, [keyLoaded, room?.id, encrypt, sendMessage, userId]);
 
-  // Send file (encrypted)
+  // Send file
   const handleSendFile = useCallback(async (file) => {
     if (!keyLoaded || !room?.id) return;
     try {
@@ -175,7 +176,6 @@ export default function ChatPage() {
     } catch (err) { addToast(err.message || 'Failed to send file', 'error'); throw err; }
   }, [keyLoaded, room?.id, encryptFileHook, encrypt, sendMessage, userId, addToast]);
 
-  // Download file
   const handleDownloadFile = useCallback(async (message) => {
     try {
       addToast('Downloading & decrypting…', 'info');
@@ -183,7 +183,6 @@ export default function ChatPage() {
     } catch (err) { addToast(err.message || 'Download failed', 'error'); }
   }, [downloadFile, addToast]);
 
-  // Drag-drop
   const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
   const handleDragLeave = (e) => { e.preventDefault(); if (!e.currentTarget.contains(e.relatedTarget)) setIsDragging(false); };
   const handleDrop = (e) => { e.preventDefault(); setIsDragging(false); const f = e.dataTransfer.files?.[0]; if (f) handleSendFile(f); };
@@ -191,14 +190,12 @@ export default function ChatPage() {
 
   const roomUrl = `${window.location.origin}/room/${roomCode}${window.location.hash}`;
 
-  // ── Loading state ──
   if (roomLoading) return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <LoadingSpinner size="lg" text="Connecting to room…" />
     </div>
   );
 
-  // ── Error state ──
   if (roomError) return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px', padding: '24px', textAlign: 'center' }}>
       <div style={{ width: 56, height: 56, borderRadius: '12px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -214,7 +211,6 @@ export default function ChatPage() {
     </div>
   );
 
-  // ── No encryption key ──
   if (!keyLoaded) {
     const handlePasteLink = async () => {
       try {
@@ -226,7 +222,7 @@ export default function ChatPage() {
           addToast('No encryption key found in clipboard link', 'warning');
         }
       } catch {
-        addToast('Cannot read clipboard — paste the full link in the address bar', 'warning');
+        addToast('Cannot read clipboard — paste the full link in your browser address bar', 'warning');
       }
     };
 
@@ -238,9 +234,9 @@ export default function ChatPage() {
             <Lock size={26} color="var(--accent)" />
           </div>
           <div>
-            <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Encryption key needed</h2>
+            <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Encryption Key Needed</h2>
             <p style={{ fontSize: '14px', color: 'var(--text-muted)', maxWidth: '380px', lineHeight: 1.6 }}>
-              This room uses end-to-end encryption. The decryption key is embedded in the full invite link — it's never stored on the server.
+              This room uses end-to-end encryption. The decryption key is embedded in the full invite link — it is never stored on the server.
             </p>
           </div>
 
@@ -252,62 +248,55 @@ export default function ChatPage() {
               <ArrowLeft size={15} /> Back to Dashboard
             </button>
           </div>
-
-          <p style={{ fontSize: '12px', color: 'var(--text-dim)', maxWidth: '340px', lineHeight: 1.5 }}>
-            Ask the room creator to share the invite link. It looks like:<br />
-            <code style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', color: 'var(--text-dim)' }}>
-              vanishchat.app/room/abc123#key=...
-            </code>
-          </p>
         </div>
       </div>
     );
   }
 
-  // ── Main Chat UI ──
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' }}>
       <Header />
 
-      {/* Countdown badge (floating) — Thanos snap triggers when expired */}
-      <CountdownBadge countdown={countdown} onExtendClick={() => setShowExtendVote(true)} />
-
-      {/* Chat container */}
+      {/* Main chat layout */}
       <div
         ref={chatContainerRef}
-        style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '860px', width: '100%', margin: '0 auto', position: 'relative', overflow: 'hidden' }}
+        style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', width: '100%', margin: '0 auto', position: 'relative', overflow: 'hidden' }}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {/* Chat header bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button onClick={() => navigate('/dashboard')} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '6px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}
-              onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>
+        {/* Header Bar */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 16px', borderBottom: '1px solid var(--border)',
+          background: 'var(--surface)', flexShrink: 0, gap: '12px', flexWrap: 'wrap'
+        }}>
+          {/* Left info */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button onClick={() => navigate('/dashboard')} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '6px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}>
               <ArrowLeft size={16} />
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Shield size={16} color="var(--accent)" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Shield size={15} color="var(--accent)" />
               </div>
               <div>
-                <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '15px', fontWeight: 700, color: 'var(--text)', letterSpacing: '0.08em' }}>{roomCode}</p>
-                <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                  {onlineMembers.length} online · End-to-end encrypted
-                </p>
+                <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '15px', fontWeight: 700, color: 'var(--text)', letterSpacing: '0.06em' }}>{roomCode}</p>
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>E2E Encrypted</p>
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
+          {/* Middle: Timer & Extend button */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <CountdownBadge countdown={countdown} onExtendClick={() => setShowExtendVote(true)} />
+          </div>
+
+          {/* Right actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
               onClick={() => setShowQR(true)}
-              title="Share room link"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '8px', cursor: 'pointer', background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-muted)', fontSize: '13px', fontWeight: 500 }}
-              onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '13px', fontWeight: 600 }}
             >
               <Share2 size={14} /> Invite
             </button>
@@ -315,27 +304,32 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Drag-drop overlay */}
+        {/* Top Active Voting Banner (visible to all members in room) */}
+        {room && (
+          <ExtendVoteBanner
+            roomId={room.id}
+            userId={userId}
+            memberCount={onlineMembers.length || 1}
+          />
+        )}
+
+        {/* Drag-drop zone */}
         <DragDropZone isDragging={isDragging} />
 
-        {/* Messages area */}
+        {/* Messages */}
         <div style={{ flex: 1, overflowY: 'auto', paddingTop: '16px', paddingBottom: '8px' }}>
           {messagesLoading ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
               <LoadingSpinner text="Loading messages…" />
             </div>
           ) : messages.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '200px', gap: '12px', textAlign: 'center', padding: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '220px', gap: '12px', textAlign: 'center', padding: '24px' }}>
               <div style={{ width: 48, height: 48, borderRadius: '12px', background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Shield size={22} color="var(--text-dim)" />
               </div>
               <div>
-                <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-muted)', marginBottom: '4px' }}>No messages yet</p>
-                <p style={{ fontSize: '13px', color: 'var(--text-dim)' }}>Send the first message to start the countdown timer</p>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '100px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)' }}>
-                <Lock size={12} color="var(--accent)" />
-                <span style={{ fontSize: '12px', color: 'var(--accent)', fontWeight: 500 }}>All messages are end-to-end encrypted</span>
+                <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', marginBottom: '4px' }}>Encrypted Room Ready</p>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Send the first message to start the room countdown timer.</p>
               </div>
             </div>
           ) : (
@@ -355,7 +349,7 @@ export default function ChatPage() {
           <div ref={messagesEndRef} style={{ height: '8px' }} />
         </div>
 
-        {/* Input bar */}
+        {/* Input */}
         <MessageInput
           onSendMessage={handleSendMessage}
           onSendFile={handleSendFile}
@@ -376,7 +370,7 @@ export default function ChatPage() {
         />
       )}
 
-      {/* Thanos snap overlay — shown after canvas disintegration animation completes */}
+      {/* Thanos snap */}
       <ThanosSnap isExpired={snapTriggered} onRedirect={() => navigate('/dashboard')} />
     </div>
   );

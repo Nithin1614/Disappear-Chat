@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RefreshCw, ArrowRight } from 'lucide-react';
+import { RefreshCw, ArrowRight, UserCheck } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { generateUserId, isValidUserId } from '../../lib/userIdGenerator';
 import { useUser } from '../../context/UserContext';
@@ -18,14 +18,24 @@ export default function UserSetup() {
 
   const handleCreate = async () => {
     if (loading) return;
+    const trimmedName = displayName.trim();
+    if (!trimmedName) {
+      addToast('Username is required! Please enter your name.', 'error');
+      return;
+    }
     setLoading(true);
     try {
       const { data: existing } = await supabase.from('users').select('user_id').eq('user_id', generatedId).single();
-      if (existing) { setGeneratedId(generateUserId()); addToast('ID taken, regenerated', 'warning'); setLoading(false); return; }
-      const { error } = await supabase.from('users').insert({ user_id: generatedId, display_name: displayName.trim() || null });
+      if (existing) {
+        setGeneratedId(generateUserId());
+        addToast('ID collision, generated a new ID. Click create again.', 'warning');
+        setLoading(false);
+        return;
+      }
+      const { error } = await supabase.from('users').insert({ user_id: generatedId, display_name: trimmedName });
       if (error) throw error;
-      setUser(generatedId, displayName.trim());
-      addToast('Identity created!', 'success');
+      setUser(generatedId, trimmedName);
+      addToast(`Identity created! Welcome, ${trimmedName}.`, 'success');
       navigate('/dashboard');
     } catch (err) {
       addToast(err.message || 'Failed to create identity', 'error');
@@ -39,86 +49,95 @@ export default function UserSetup() {
     setLoading(true);
     try {
       const { data, error } = await supabase.from('users').select('user_id, display_name').eq('user_id', id).single();
-      if (error || !data) { addToast('User not found. Check your ID or create a new one.', 'error'); setLoading(false); return; }
+      if (error || !data) { addToast('User not found. Check your ID or create a new identity.', 'error'); setLoading(false); return; }
       await supabase.from('users').update({ last_seen: new Date().toISOString() }).eq('user_id', id);
-      setUser(data.user_id, data.display_name || '');
-      addToast('Welcome back!', 'success');
+      setUser(data.user_id, data.display_name || id);
+      addToast(`Welcome back, ${data.display_name || id}!`, 'success');
       navigate('/dashboard');
     } catch (err) {
       addToast(err.message || 'Login failed', 'error');
     } finally { setLoading(false); }
   };
 
-  /* ---- shared styles ---- */
   const tabBase = {
-    flex: 1, padding: '10px 0', fontSize: '14px', fontWeight: 500,
+    flex: 1, padding: '10px 0', fontSize: '14px', fontWeight: 600,
     cursor: 'pointer', border: 'none', borderRadius: '8px', transition: 'all 0.15s ease',
   };
 
   return (
     <div style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }}>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '28px', }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '28px' }}>
 
         {/* Tab */}
-        <div style={{ display: 'flex', gap: '4px', padding: '4px', background: 'var(--surface-2)', borderRadius: '10px', marginBottom: '28px' }}>
+        <div style={{ display: 'flex', gap: '4px', padding: '4px', background: 'var(--surface-2)', borderRadius: '10px', marginBottom: '24px' }}>
           <button
             onClick={() => setMode('create')}
             style={{ ...tabBase, background: mode === 'create' ? 'var(--accent)' : 'transparent', color: mode === 'create' ? '#fff' : 'var(--text-muted)' }}
-          >New Identity</button>
+          >Create Identity</button>
           <button
             onClick={() => setMode('login')}
             style={{ ...tabBase, background: mode === 'login' ? 'var(--accent)' : 'transparent', color: mode === 'login' ? '#fff' : 'var(--text-muted)' }}
-          >Have an ID</button>
+          >Log In with ID</button>
         </div>
 
         {mode === 'create' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* ID Display */}
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>Your unique ID</p>
+            <div style={{ textAlign: 'center', background: 'var(--surface-2)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Your Generated User ID</p>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '36px', fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.12em' }}>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '32px', fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.12em' }}>
                   {generatedId}
                 </span>
                 <button
                   onClick={() => setGeneratedId(generateUserId())}
                   title="Generate new ID"
-                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', transition: 'color 0.15s' }}
+                  style={{ background: 'var(--surface-3)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', transition: 'color 0.15s' }}
                   onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
                   onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
                 >
                   <RefreshCw size={16} />
                 </button>
               </div>
-              <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '8px' }}>Save this — you'll need it to log back in</p>
+              <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '6px' }}>Save this ID to log back in anytime</p>
             </div>
 
-            {/* Display name */}
+            {/* Username / Display name input (Mandatory) */}
             <div>
-              <label className="label">Display name <span style={{ opacity: 0.4 }}>(optional)</span></label>
+              <label className="label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Username / Name</span>
+                <span style={{ color: 'var(--accent)', fontSize: '11px', fontWeight: 600 }}>* REQUIRED</span>
+              </label>
               <input
                 className="input-field"
                 type="text"
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
-                placeholder="What should others call you?"
+                placeholder="Enter your username (e.g. Alex)"
                 maxLength={30}
+                required
+                onKeyDown={e => e.key === 'Enter' && handleCreate()}
               />
             </div>
 
-            <button className="btn-primary" onClick={handleCreate} disabled={loading}>
+            <button
+              className="btn-primary"
+              onClick={handleCreate}
+              disabled={loading || !displayName.trim()}
+              style={{ opacity: !displayName.trim() ? 0.5 : 1 }}
+            >
               {loading
                 ? <><span style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', display: 'inline-block', animation: 'spin 0.8s linear infinite' }} /><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>Creating...</>
-                : <>Create Identity <ArrowRight size={15} /></>}
+                : <><UserCheck size={16} /> Get Started <ArrowRight size={15} /></>}
             </button>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div>
-              <label className="label">Your User ID</label>
+              <label className="label">Enter Your 6-Char User ID</label>
               <input
                 className="input-field font-mono"
-                style={{ textAlign: 'center', fontSize: '22px', letterSpacing: '0.15em' }}
+                style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '0.15em', fontWeight: 700 }}
                 type="text"
                 value={loginId}
                 onChange={e => setLoginId(e.target.value.toLowerCase())}
@@ -126,13 +145,13 @@ export default function UserSetup() {
                 maxLength={6}
                 onKeyDown={e => e.key === 'Enter' && handleLogin()}
               />
-              <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '6px' }}>3 lowercase letters + 3 digits</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '6px' }}>Format: 3 letters + 3 numbers (e.g. nrg483)</p>
             </div>
 
             <button className="btn-primary" onClick={handleLogin} disabled={loading || loginId.length < 6}>
               {loading
-                ? <><span style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', display: 'inline-block', animation: 'spin 0.8s linear infinite' }} />Checking...</>
-                : <>Access Account <ArrowRight size={15} /></>}
+                ? <><span style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', display: 'inline-block', animation: 'spin 0.8s linear infinite' }} />Logging in...</>
+                : <>Log In to Account <ArrowRight size={15} /></>}
             </button>
           </div>
         )}
