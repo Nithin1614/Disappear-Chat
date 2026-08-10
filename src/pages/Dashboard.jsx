@@ -41,16 +41,18 @@ export default function Dashboard() {
     setRejoinRoomCode(null);
   };
 
-  // Check if user accidentally exited an active chat room
+  // Check if user accidentally exited an active chat room (with instant mobile pageshow/focus/visibility listeners)
   useEffect(() => {
-    const lastRoom = sessionStorage.getItem('vanishchat_last_active_room');
-    if (!lastRoom || !userId) return;
+    if (!userId) return;
 
-    const consumedKey = `vanishchat_reentry_consumed_${userId}_${lastRoom}`;
-    const isConsumed = sessionStorage.getItem(consumedKey) === 'true';
-    if (isConsumed) return;
+    const checkRejoin = async () => {
+      const lastRoom = sessionStorage.getItem('vanishchat_last_active_room');
+      if (!lastRoom) return;
 
-    async function checkRejoin() {
+      const consumedKey = `vanishchat_reentry_consumed_${userId}_${lastRoom}`;
+      const isConsumed = sessionStorage.getItem(consumedKey) === 'true';
+      if (isConsumed) return;
+
       const { data, error } = await supabase
         .from('rooms')
         .select('room_code, is_active, expires_at')
@@ -69,9 +71,21 @@ export default function Dashboard() {
       }
 
       setRejoinRoomCode(data.room_code);
-    }
+    };
 
     checkRejoin();
+
+    // Instant triggers for mobile browser back gestures, bfcache restoration, and tab visibility
+    const handleMobileReturn = () => checkRejoin();
+    window.addEventListener('pageshow', handleMobileReturn);
+    window.addEventListener('focus', handleMobileReturn);
+    document.addEventListener('visibilitychange', handleMobileReturn);
+
+    return () => {
+      window.removeEventListener('pageshow', handleMobileReturn);
+      window.removeEventListener('focus', handleMobileReturn);
+      document.removeEventListener('visibilitychange', handleMobileReturn);
+    };
   }, [userId]);
 
   // 12-second expiration timer with progress bar

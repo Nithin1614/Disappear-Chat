@@ -225,6 +225,14 @@ export default function ChatPage() {
 
   const countdown = useCountdown(room?.expires_at, room?.duration_minutes);
 
+  // Track last active room for instant mobile re-entry card display on exit
+  useEffect(() => {
+    if (!roomCode) return;
+    try {
+      sessionStorage.setItem('vanishchat_last_active_room', roomCode);
+    } catch {}
+  }, [roomCode]);
+
   // Auth redirect
   useEffect(() => { if (!isAuthenticated) window.location.href = '/'; }, [isAuthenticated]);
 
