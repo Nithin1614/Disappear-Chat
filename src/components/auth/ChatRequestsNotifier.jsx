@@ -5,8 +5,7 @@ import { useToast } from '../../context/ToastContext';
 
 /**
  * Floating chat request notifications & direct chat synchronization listener.
- * Uses Realtime Broadcast + Postgres Changes + Polling Fallback to guarantee
- * instant 0-second notifications without requiring browser refresh!
+ * Mobile-aligned layout + instant single-use session lifecycle.
  */
 export default function ChatRequestsNotifier({ userId }) {
   const [requests, setRequests] = useState([]);
@@ -75,6 +74,8 @@ export default function ChatRequestsNotifier({ userId }) {
         if (payload.new && payload.new.status === 'accepted') {
           const roomCode = payload.new.room_code;
           addToast('Chat request accepted! Entering room with partner…', 'success');
+          // Instantly mark completed in DB so it is cleaned up and never prompts again on exit/return!
+          supabase.from('chat_requests').update({ status: 'completed' }).eq('id', payload.new.id).then(() => {});
           setTimeout(() => {
             if (!window.location.pathname.includes(`/room/${roomCode}`)) {
               window.location.href = `/room/${roomCode}`;
@@ -121,11 +122,14 @@ export default function ChatRequestsNotifier({ userId }) {
         { onConflict: 'room_id,user_id' }
       );
 
-      // Mark request as accepted -> triggers sender's outgoing listener!
+      // Mark request as accepted in DB (triggers sender's listener)
       await supabase
         .from('chat_requests')
         .update({ status: 'accepted' })
         .eq('id', req.id);
+
+      // Remove from local notification list immediately
+      setRequests(prev => prev.filter(r => r.id !== req.id));
 
       addToast('Accepted! Entering chat…', 'success');
       window.location.href = `/room/${req.room_code}`;
@@ -158,17 +162,17 @@ export default function ChatRequestsNotifier({ userId }) {
 
   return (
     <>
-      <div style={{
-        position: 'fixed',
-        bottom: '20px',
-        right: '16px',
-        zIndex: 9998,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-        width: 'min(340px, calc(100vw - 32px))',
-        pointerEvents: 'none',
-      }}>
+      <div
+        className="chat-request-toast-container"
+        style={{
+          position: 'fixed',
+          zIndex: 9998,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+          pointerEvents: 'none',
+        }}
+      >
         {requests.map(req => (
           <div
             key={req.id}
@@ -178,12 +182,13 @@ export default function ChatRequestsNotifier({ userId }) {
               border: '1px solid var(--accent-border)',
               borderRadius: '16px',
               padding: '16px',
-              boxShadow: '0 12px 40px rgba(0,0,0,0.7), 0 0 0 1px var(--accent-border)',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.75), 0 0 0 1px var(--accent-border)',
               display: 'flex',
               flexDirection: 'column',
               gap: '12px',
               pointerEvents: 'all',
               position: 'relative',
+              boxSizing: 'border-box',
             }}
           >
             {/* Top Close X button */}
@@ -228,13 +233,13 @@ export default function ChatRequestsNotifier({ userId }) {
                     Incoming Chat Request
                   </span>
                 </div>
-                <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', lineHeight: 1.2, marginBottom: '3px' }}>
+                <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', lineHeight: 1.2, marginBottom: '3px', wordBreak: 'break-word' }}>
                   {req.sender_name || req.sender_id}
                 </p>
                 <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
                   wants a private 5-min encrypted chat
                 </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
                   <Shield size={10} color="var(--accent)" />
                   <span style={{ fontSize: '10px', color: 'var(--accent)', fontWeight: 600 }}>E2E Encrypted · Auto-deletes after 5 min</span>
                 </div>
@@ -277,7 +282,7 @@ export default function ChatRequestsNotifier({ userId }) {
                   border: '1px solid var(--border)', borderRadius: '10px',
                   padding: '11px 14px', fontSize: '13px', cursor: accepting ? 'not-allowed' : 'pointer',
                   display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600,
-                  opacity: accepting ? 0.5 : 1,
+                  opacity: accepting ? 0.5 : 1, flexShrink: 0,
                 }}
               >
                 <X size={15} /> Decline
@@ -288,6 +293,21 @@ export default function ChatRequestsNotifier({ userId }) {
       </div>
 
       <style>{`
+        .chat-request-toast-container {
+          bottom: 20px;
+          right: 20px;
+          width: 360px;
+          max-width: calc(100vw - 32px);
+        }
+        @media (max-width: 640px) {
+          .chat-request-toast-container {
+            right: 50% !important;
+            transform: translateX(50%) !important;
+            bottom: 16px !important;
+            width: calc(100vw - 24px) !important;
+            max-width: 400px !important;
+          }
+        }
         @keyframes req-ring {
           0%, 100% { transform: scale(1); opacity: 0.5; }
           50%       { transform: scale(1.12); opacity: 0.15; }

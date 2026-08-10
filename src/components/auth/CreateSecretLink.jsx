@@ -19,7 +19,12 @@ async function encryptContent(text, key) {
   const enc = new TextEncoder();
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(text));
-  const toBase64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const toBase64 = (buf) => {
+    const bytes = new Uint8Array(buf);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary);
+  };
   return { encryptedBase64: toBase64(encrypted), ivBase64: toBase64(iv) };
 }
 
