@@ -43,7 +43,7 @@ export default function LandingPage() {
           }}>
             <Sparkles size={13} color="var(--accent)" />
             <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text)', letterSpacing: '0.02em' }}>
-              End-to-End Encrypted · Zero Logs
+              AES-256-GCM E2E Encrypted · Zero Logs
             </span>
           </div>
 
