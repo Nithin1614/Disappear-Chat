@@ -43,22 +43,22 @@ export default function LandingPage() {
           }}>
             <Sparkles size={13} color="var(--accent)" />
             <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text)', letterSpacing: '0.02em' }}>
-              Zero Trace · E2E Encrypted · Auto-Vanish
+              End-to-End Encrypted · Zero Logs
             </span>
           </div>
 
           {/* Title */}
           <h1 style={{
-            fontSize: 'clamp(32px, 5.5vw, 56px)', fontWeight: 800, color: 'var(--text)',
+            fontSize: 'clamp(34px, 5.8vw, 60px)', fontWeight: 800, color: 'var(--text)',
             letterSpacing: '-0.035em', lineHeight: 1.1, marginBottom: '14px'
           }}>
-            Zero-Trace Private Chat <br />
+            Say what you want. <br />
             <span style={{
               background: 'linear-gradient(135deg, #a855f7 0%, #8b5cf6 45%, #06b6d4 100%)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
               filter: 'drop-shadow(0 0 25px rgba(139,92,246,0.35))'
             }}>
-              Built to Disappear.
+              It vanishes when you're done.
             </span>
           </h1>
 
@@ -66,7 +66,7 @@ export default function LandingPage() {
             fontSize: 'clamp(14px, 1.8vw, 16px)', color: 'var(--text-muted)',
             maxWidth: '520px', margin: '0 auto', lineHeight: 1.55
           }}>
-            Self-destructing rooms, burn messages & one-time links. Zero logs. Zero traces.
+            Encrypted rooms, one-time burn messages, and self-destruct links. Nothing stays behind.
           </p>
 
           {/* Quick Dashboard link if already authenticated */}
