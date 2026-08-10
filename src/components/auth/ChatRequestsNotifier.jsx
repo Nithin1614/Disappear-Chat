@@ -4,14 +4,16 @@ import { supabase } from '../../lib/supabase';
 import { useToast } from '../../context/ToastContext';
 
 /**
- * Floating chat request notifications — fixed bottom-right, always on top.
- * Uses PBKDF2 room-code key derivation so no #key fragment is needed.
+ * Floating chat request notifications & direct chat synchronization listener.
+ * - Listens for incoming chat requests (target_id = userId) -> displays floating alert card.
+ * - Listens for outgoing chat requests (sender_id = userId) -> when target accepts, automatically navigates sender into room!
  */
 export default function ChatRequestsNotifier({ userId }) {
   const [requests, setRequests] = useState([]);
   const [accepting, setAccepting] = useState(null);
   const { addToast } = useToast();
 
+  // Incoming requests listener (target_id = userId)
   useEffect(() => {
     if (!userId) return;
 
@@ -28,7 +30,7 @@ export default function ChatRequestsNotifier({ userId }) {
     fetchRequests();
 
     const channel = supabase
-      .channel(`chat_reqs:${userId}`)
+      .channel(`chat_reqs_in:${userId}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -52,6 +54,34 @@ export default function ChatRequestsNotifier({ userId }) {
     return () => { supabase.removeChannel(channel); };
   }, [userId]);
 
+  // Outgoing requests listener (sender_id = userId) — redirects sender as soon as target accepts!
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel(`chat_reqs_out:${userId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'chat_requests',
+        filter: `sender_id=eq.${userId}`,
+      }, (payload) => {
+        if (payload.new && payload.new.status === 'accepted') {
+          const roomCode = payload.new.room_code;
+          addToast('Chat request accepted! Entering room with partner…', 'success');
+          // Short delay so toast shows before navigate
+          setTimeout(() => {
+            if (!window.location.pathname.includes(`/room/${roomCode}`)) {
+              window.location.href = `/room/${roomCode}`;
+            }
+          }, 600);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [userId, addToast]);
+
   const handleAccept = async (req) => {
     if (accepting) return;
     setAccepting(req.id);
@@ -66,7 +96,6 @@ export default function ChatRequestsNotifier({ userId }) {
 
       if (roomErr || !room) {
         addToast('Room no longer exists or has expired.', 'error');
-        // Clean up the stale request
         await supabase.from('chat_requests').update({ status: 'declined' }).eq('id', req.id);
         setRequests(prev => prev.filter(r => r.id !== req.id));
         setAccepting(null);
@@ -87,15 +116,15 @@ export default function ChatRequestsNotifier({ userId }) {
         { onConflict: 'room_id,user_id' }
       );
 
-      // Mark request as accepted
+      // Mark request as accepted -> triggers sender's outgoing listener!
       await supabase
         .from('chat_requests')
         .update({ status: 'accepted' })
         .eq('id', req.id);
 
-      addToast('Accepted! Entering encrypted chat…', 'success');
+      addToast('Accepted! Entering chat…', 'success');
 
-      // Navigate — key is derived from room_code via PBKDF2, no hash needed
+      // Recipient enters room immediately
       window.location.href = `/room/${req.room_code}`;
 
     } catch (err) {
@@ -130,7 +159,7 @@ export default function ChatRequestsNotifier({ userId }) {
         flexDirection: 'column',
         gap: '10px',
         width: 'min(340px, calc(100vw - 32px))',
-        pointerEvents: 'none', // container transparent to clicks
+        pointerEvents: 'none',
       }}>
         {requests.map(req => (
           <div
@@ -145,7 +174,7 @@ export default function ChatRequestsNotifier({ userId }) {
               display: 'flex',
               flexDirection: 'column',
               gap: '12px',
-              pointerEvents: 'all', // re-enable for the card itself
+              pointerEvents: 'all',
             }}
           >
             {/* Icon + text */}

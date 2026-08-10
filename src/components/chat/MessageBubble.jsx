@@ -10,6 +10,7 @@ export default function MessageBubble({ message, isSender, decryptedContent, dec
 
   const [burnRevealed, setBurnRevealed] = useState(false);
   const [burnCountdown, setBurnCountdown] = useState(null);
+  const [isSnapping, setIsSnapping] = useState(false);
   const [burnDone, setBurnDone] = useState(false);
   const burnTimerRef = useRef(null);
 
@@ -20,13 +21,18 @@ export default function MessageBubble({ message, isSender, decryptedContent, dec
     if (burnRevealed || isSender) return;
     setBurnRevealed(true);
     setBurnCountdown(5);
+
     burnTimerRef.current = setInterval(() => {
       setBurnCountdown(prev => {
+        if (prev <= 2 && !isSnapping) {
+          setIsSnapping(true);
+        }
         if (prev <= 1) {
           clearInterval(burnTimerRef.current);
-          setBurnDone(true);
-          // Delete from DB
-          supabase.from('messages').delete().eq('id', message.id).then(() => {});
+          setTimeout(() => {
+            setBurnDone(true);
+            supabase.from('messages').delete().eq('id', message.id).then(() => {});
+          }, 1200);
           return 0;
         }
         return prev - 1;
@@ -53,34 +59,66 @@ export default function MessageBubble({ message, isSender, decryptedContent, dec
   );
 
   const displayName = senderName || message.sender_id;
-
-  // Burn-after-read: show locked state until recipient reveals
   const showBurnLocked = isBurn && !isSender && !burnRevealed;
-  const showBurnCountdown = isBurn && !isSender && burnRevealed && burnCountdown !== null;
 
   return (
-    <div style={{ display: 'flex', justifyContent: isSender ? 'flex-end' : 'flex-start', marginBottom: '8px', padding: '0 16px' }}>
-      <div style={{
-        maxWidth: '75%',
-        background: isBurn
-          ? (isSender ? 'rgba(239,68,68,0.25)' : 'rgba(239,68,68,0.12)')
-          : (isSender ? 'var(--accent)' : 'var(--surface-2)'),
-        color: isSender ? '#fff' : 'var(--text)',
-        border: isBurn
-          ? '1px solid rgba(239,68,68,0.4)'
-          : (isSender ? 'none' : '1px solid var(--border)'),
-        borderRadius: isSender ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-        padding: '10px 14px',
-        position: 'relative',
-        transition: 'opacity 0.3s ease',
-        opacity: showBurnCountdown && burnCountdown <= 2 ? burnCountdown / 3 : 1,
-      }}>
+    <div style={{
+      display: 'flex', justifyContent: isSender ? 'flex-end' : 'flex-start',
+      marginBottom: '8px', padding: '0 16px', position: 'relative'
+    }}>
+
+      {/* Disintegrating particle overlay when Thanos snap triggers */}
+      {isSnapping && (
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10, overflow: 'visible' }}>
+          {Array.from({ length: 24 }).map((_, i) => {
+            const rx = (Math.random() - 0.5) * 120;
+            const ry = -(Math.random() * 80 + 20);
+            const hue = Math.random() > 0.5 ? 270 : 340;
+            return (
+              <div
+                key={i}
+                style={{
+                  position: 'absolute',
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  width: Math.random() * 5 + 2,
+                  height: Math.random() * 5 + 2,
+                  borderRadius: '50%',
+                  background: `hsl(${hue}, 85%, 60%)`,
+                  boxShadow: `0 0 6px hsl(${hue}, 90%, 60%)`,
+                  animation: `burn-particle-drift 1.2s ease-out forwards`,
+                  transform: `translate(${rx}px, ${ry}px)`,
+                  opacity: 0,
+                }}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      <div
+        className={isSnapping ? 'thanos-snap-anim' : ''}
+        style={{
+          maxWidth: '75%',
+          background: isBurn
+            ? (isSender ? 'rgba(239,68,68,0.25)' : 'rgba(239,68,68,0.14)')
+            : (isSender ? 'var(--accent)' : 'var(--surface-2)'),
+          color: isSender ? '#fff' : 'var(--text)',
+          border: isBurn
+            ? '1px solid rgba(239,68,68,0.45)'
+            : (isSender ? 'none' : '1px solid var(--border)'),
+          borderRadius: isSender ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+          padding: '10px 14px',
+          position: 'relative',
+          transition: 'all 0.3s ease',
+        }}
+      >
         {/* Burn indicator */}
         {isBurn && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
-            <Flame size={11} color="var(--danger)" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+            <Flame size={12} color="var(--danger)" />
             <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--danger)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              {isSender ? 'Burn After Read' : (burnRevealed ? `Self-destructs in ${burnCountdown}s` : 'Tap to reveal')}
+              {isSender ? 'Burn After Read' : (burnRevealed ? (isSnapping ? 'Disintegrating…' : `Self-destructs in ${burnCountdown}s`) : 'Tap to reveal')}
             </span>
           </div>
         )}
@@ -98,13 +136,15 @@ export default function MessageBubble({ message, isSender, decryptedContent, dec
             onClick={handleRevealBurn}
             style={{
               background: 'rgba(239,68,68,0.15)', border: '1px dashed rgba(239,68,68,0.5)',
-              borderRadius: '8px', padding: '14px 20px', cursor: 'pointer',
+              borderRadius: '10px', padding: '14px 20px', cursor: 'pointer',
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
-              width: '100%', color: 'var(--danger)'
+              width: '100%', color: 'var(--danger)', transition: 'background 0.15s',
             }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.22)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.15)'}
           >
-            <Eye size={20} />
-            <span style={{ fontSize: '12px', fontWeight: 600 }}>Tap to reveal — message will self-destruct</span>
+            <Eye size={22} />
+            <span style={{ fontSize: '12px', fontWeight: 700 }}>Tap to reveal — message self-destructs</span>
           </button>
         ) : (
           <>
@@ -156,6 +196,13 @@ export default function MessageBubble({ message, isSender, decryptedContent, dec
             : <Check size={13} style={{ opacity: 0.5 }} />)}
         </div>
       </div>
+
+      <style>{`
+        @keyframes burn-particle-drift {
+          0%   { opacity: 1; transform: translate(0, 0) scale(1); }
+          100% { opacity: 0; transform: translate(var(--rx, 40px), var(--ry, -50px)) scale(0.2); }
+        }
+      `}</style>
     </div>
   );
 }

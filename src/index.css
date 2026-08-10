@@ -3,28 +3,31 @@
 
 @import "tailwindcss";
 
-/* ===== Design Tokens — Modern Dark (Emerald Teal Accent) ===== */
+/* ===== Design Tokens — Cyber Violet (Electric Violet Accent) ===== */
 :root {
-  --bg: #08090d;
-  --surface: #11131c;
-  --surface-2: #181b27;
-  --surface-3: #212534;
-  --border: #262a3d;
-  --border-light: #32374e;
+  --bg: #07070d;
+  --surface: #10101a;
+  --surface-2: #171726;
+  --surface-3: #212136;
+  --border: #282842;
+  --border-light: #363659;
 
   --text: #ffffff;
-  --text-muted: #94a3b8;
+  --text-muted: #a0aec0;
   --text-dim: #64748b;
 
-  --accent: #10b981;
-  --accent-hover: #059669;
-  --accent-dim: rgba(16, 185, 129, 0.15);
-  --accent-border: rgba(16, 185, 129, 0.38);
+  --accent: #8b5cf6;
+  --accent-hover: #7c3aed;
+  --accent-dim: rgba(139, 92, 246, 0.16);
+  --accent-border: rgba(139, 92, 246, 0.42);
 
-  --success: #22c55e;
+  --cyan: #06b6d4;
+  --cyan-dim: rgba(6, 182, 212, 0.15);
+
+  --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --info: #10b981;
+  --info: #8b5cf6;
 
   --radius-sm: 8px;
   --radius: 12px;
@@ -32,7 +35,7 @@
   --radius-xl: 20px;
 }
 
-/* ===== Design Tokens — Light (Emerald Teal Accent) ===== */
+/* ===== Design Tokens — Light (Cyber Purple Accent) ===== */
 [data-theme="light"] {
   --bg: #f8fafc;
   --surface: #ffffff;
@@ -45,15 +48,18 @@
   --text-muted: #475569;
   --text-dim: #64748b;
 
-  --accent: #059669;
-  --accent-hover: #047857;
-  --accent-dim: rgba(5, 150, 105, 0.1);
-  --accent-border: rgba(5, 150, 105, 0.3);
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-dim: rgba(124, 58, 237, 0.1);
+  --accent-border: rgba(124, 58, 237, 0.3);
+
+  --cyan: #0891b2;
+  --cyan-dim: rgba(8, 145, 178, 0.1);
 
   --success: #16a34a;
   --warning: #d97706;
   --danger: #dc2626;
-  --info: #059669;
+  --info: #7c3aed;
 }
 
 /* ===== Reset ===== */
@@ -84,7 +90,7 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 /* ===== Selection ===== */
-::selection { background: rgba(16, 185, 129, 0.28); }
+::selection { background: rgba(139, 92, 246, 0.35); }
 
 /* ===== Focus ===== */
 input:focus, textarea:focus, button:focus-visible {
@@ -143,14 +149,14 @@ input[type="range"]::-webkit-slider-thumb {
 }
 .animate-fade-in { animation: fade-in 0.4s ease forwards; }
 
-@keyframes bounce-dot {
-  0%, 80%, 100% { transform: translateY(0); }
-  40%           { transform: translateY(-6px); }
+@keyframes thanos-disintegrate {
+  0% { opacity: 1; transform: scale(1) translateY(0) rotate(0deg); filter: blur(0px); }
+  20% { opacity: 0.9; transform: scale(1.02) translateY(-2px) rotate(1deg); filter: contrast(1.5) hue-rotate(90deg); }
+  50% { opacity: 0.6; transform: scale(0.95) translateY(-8px) rotate(-3deg); filter: blur(2px) sepia(1); }
+  100% { opacity: 0; transform: scale(0.6) translateY(-25px) rotate(6deg); filter: blur(8px) brightness(2); }
 }
-
-@keyframes flash-black {
-  0%, 100% { opacity: 0; }
-  50%      { opacity: 1; }
+.thanos-snap-anim {
+  animation: thanos-disintegrate 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
 /* ===== Utility ===== */
@@ -169,16 +175,20 @@ input[type="range"]::-webkit-slider-thumb {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   width: 100%;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.25);
 }
-.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+}
 .btn-primary:active:not(:disabled) { transform: scale(0.98); }
-.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
 
 .btn-ghost {
   background: transparent;
@@ -243,13 +253,7 @@ input[type="range"]::-webkit-slider-thumb {
   background: var(--border);
 }
 
-/* ===== Toast override ===== */
-.toast-bg {
-  background: var(--surface-2) !important;
-  border: 1px solid var(--border) !important;
-}
-
-/* ===== Screenshot deterrent ===== */
+/* Screenshot deterrent */
 .screenshot-flash {
   position: fixed;
   inset: 0;

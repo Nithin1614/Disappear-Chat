@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, User, MessageSquarePlus, Check, X } from 'lucide-react';
+import { Search, User, MessageSquarePlus, Check, X, Clock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useUser } from '../../context/UserContext';
 import { useToast } from '../../context/ToastContext';
@@ -11,7 +11,7 @@ export default function UserSearch() {
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
   const [requestingId, setRequestingId] = useState(null);
-  const [requestedMap, setRequestedMap] = useState({});
+  const [activeRequest, setActiveRequest] = useState(null);
   const debounceRef = useRef(null);
 
   const { userId, displayName } = useUser();
@@ -25,7 +25,6 @@ export default function UserSearch() {
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       setSearched(true);
-      // Search by display_name OR user_id
       const { data } = await supabase
         .from('users')
         .select('user_id, display_name')
@@ -45,11 +44,9 @@ export default function UserSearch() {
 
     try {
       const roomCode = generateRoomCode();
-
-      // 5-minute timer starts immediately from creation
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
-      // Create private 2-person room
+      // Create 5-minute room
       const { data: room, error: roomErr } = await supabase
         .from('rooms')
         .insert({
@@ -66,33 +63,33 @@ export default function UserSearch() {
 
       if (roomErr) throw roomErr;
 
-      // Add sender as room member immediately
+      // Add sender as member
       await supabase.from('room_members').upsert(
         { room_id: room.id, user_id: userId, is_online: true, display_name: displayName || userId },
         { onConflict: 'room_id,user_id' }
       );
 
-      // Simple join URL — encryption key is derived from room code on both sides (PBKDF2)
-      // No hash fragment needed: both sender and recipient derive the same key from room code
       const joinUrl = `/room/${roomCode}`;
 
-      // Insert chat request with all required info
-      const { error: reqErr } = await supabase.from('chat_requests').insert({
+      const { data: reqData, error: reqErr } = await supabase.from('chat_requests').insert({
         sender_id: userId,
         sender_name: displayName || userId,
         target_id: targetUser.user_id,
         room_code: roomCode,
         join_url: joinUrl,
         status: 'pending',
-      });
+      }).select().single();
 
       if (reqErr) throw reqErr;
 
-      setRequestedMap(prev => ({ ...prev, [targetUser.user_id]: true }));
-      addToast(`Chat request sent to ${targetUser.display_name || targetUser.user_id}!`, 'success');
+      setActiveRequest({
+        id: reqData.id,
+        targetName: targetUser.display_name || targetUser.user_id,
+        roomCode,
+        joinUrl,
+      });
 
-      // Sender enters the room immediately
-      window.location.href = joinUrl;
+      addToast(`Chat request sent to ${targetUser.display_name || targetUser.user_id}!`, 'success');
 
     } catch (err) {
       addToast(err.message || 'Failed to send chat request', 'error');
@@ -101,7 +98,38 @@ export default function UserSearch() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+      {/* Active waiting banner */}
+      {activeRequest && (
+        <div style={{
+          background: 'var(--accent-dim)', border: '1px solid var(--accent-border)',
+          borderRadius: '12px', padding: '14px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Clock size={16} color="#fff" />
+            </div>
+            <div>
+              <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
+                Waiting for <span style={{ color: 'var(--accent)' }}>{activeRequest.targetName}</span> to accept…
+              </p>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                Both of you will enter the 5-min encrypted chat as soon as they click Accept.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => window.location.href = activeRequest.joinUrl}
+            className="btn-primary"
+            style={{ width: 'auto', padding: '7px 14px', fontSize: '12px' }}
+          >
+            Enter Room Now
+          </button>
+        </div>
+      )}
+
       {/* Search input */}
       <div style={{ position: 'relative' }}>
         <Search size={14} style={{
@@ -148,14 +176,12 @@ export default function UserSearch() {
       {!searching && searched && results.length === 0 && (
         <div style={{ textAlign: 'center', padding: '16px 0' }}>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>No users found for "{query}"</p>
-          <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>Make sure you type at least 2 characters</p>
         </div>
       )}
 
-      {/* Results */}
+      {/* Results list */}
       {!searching && results.map(u => {
-        const isRequested = requestedMap[u.user_id];
-        const isSending = requestingId === u.user_id;
+        const isRequestingThis = requestingId === u.user_id;
 
         return (
           <div
@@ -169,7 +195,6 @@ export default function UserSearch() {
             onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent-border)'}
             onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
           >
-            {/* Avatar + name */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
               <div style={{
                 width: 38, height: 38, borderRadius: '50%',
@@ -189,34 +214,31 @@ export default function UserSearch() {
               </div>
             </div>
 
-            {/* Action button */}
             <button
               onClick={() => handleRequestChat(u)}
-              disabled={isRequested || !!requestingId}
+              disabled={!!requestingId}
               style={{
-                background: isRequested ? 'var(--surface-3)' : 'var(--accent)',
-                color: isRequested ? 'var(--success)' : '#fff',
+                background: 'var(--accent)',
+                color: '#fff',
                 border: 'none', borderRadius: '8px',
                 padding: '8px 14px', fontSize: '12px', fontWeight: 700,
-                cursor: (isRequested || requestingId) ? 'not-allowed' : 'pointer',
-                opacity: (!isRequested && requestingId && requestingId !== u.user_id) ? 0.4 : 1,
+                cursor: requestingId ? 'not-allowed' : 'pointer',
+                opacity: requestingId ? 0.6 : 1,
                 display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0,
                 whiteSpace: 'nowrap', transition: 'all 0.15s',
               }}
             >
-              {isSending ? (
+              {isRequestingThis ? (
                 <>
                   <div style={{
                     width: 13, height: 13, borderRadius: '50%',
                     border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff',
                     animation: 'spin 0.8s linear infinite'
                   }} />
-                  Creating room…
+                  Sending Request…
                 </>
-              ) : isRequested ? (
-                <><Check size={13} /> Entering…</>
               ) : (
-                <><MessageSquarePlus size={14} /> Chat (5 min)</>
+                <><MessageSquarePlus size={14} /> Direct Chat (5m)</>
               )}
             </button>
           </div>
