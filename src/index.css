@@ -3,23 +3,23 @@
 
 @import "tailwindcss";
 
-/* ===== Design Tokens — Dark (default) ===== */
+/* ===== Design Tokens — Modern Dark (default) ===== */
 :root {
-  --bg: #000000;
-  --surface: #0d0d0d;
-  --surface-2: #141414;
-  --surface-3: #1a1a1a;
-  --border: #222222;
-  --border-light: #2a2a2a;
+  --bg: #08090d;
+  --surface: #11131c;
+  --surface-2: #181b27;
+  --surface-3: #212534;
+  --border: #262a3d;
+  --border-light: #32374e;
 
   --text: #ffffff;
-  --text-muted: #888888;
-  --text-dim: #555555;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
 
   --accent: #3b82f6;
   --accent-hover: #2563eb;
-  --accent-dim: rgba(59, 130, 246, 0.12);
-  --accent-border: rgba(59, 130, 246, 0.3);
+  --accent-dim: rgba(59, 130, 246, 0.16);
+  --accent-border: rgba(59, 130, 246, 0.4);
 
   --success: #22c55e;
   --warning: #f59e0b;
@@ -34,21 +34,21 @@
 
 /* ===== Design Tokens — Light ===== */
 [data-theme="light"] {
-  --bg: #f5f5f5;
+  --bg: #f8fafc;
   --surface: #ffffff;
-  --surface-2: #f0f0f0;
-  --surface-3: #e8e8e8;
-  --border: #e0e0e0;
-  --border-light: #d0d0d0;
+  --surface-2: #f1f5f9;
+  --surface-3: #e2e8f0;
+  --border: #cbd5e1;
+  --border-light: #94a3b8;
 
-  --text: #0a0a0a;
-  --text-muted: #555555;
-  --text-dim: #999999;
+  --text: #0f172a;
+  --text-muted: #475569;
+  --text-dim: #64748b;
 
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
-  --accent-dim: rgba(37, 99, 235, 0.1);
-  --accent-border: rgba(37, 99, 235, 0.3);
+  --accent-dim: rgba(37, 99, 235, 0.12);
+  --accent-border: rgba(37, 99, 235, 0.35);
 
   --success: #16a34a;
   --warning: #d97706;
@@ -79,12 +79,12 @@ body {
 }
 
 /* ===== Scrollbar ===== */
-::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 /* ===== Selection ===== */
-::selection { background: rgba(59, 130, 246, 0.25); }
+::selection { background: rgba(59, 130, 246, 0.3); }
 
 /* ===== Focus ===== */
 input:focus, textarea:focus, button:focus-visible {
