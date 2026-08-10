@@ -34,7 +34,14 @@ export function UserProvider({ children }) {
 
   // Call Supabase DB cleanup function for 24h expired users
   useEffect(() => {
-    supabase.rpc('cleanup_expired_users').catch(() => {});
+    async function runCleanup() {
+      try {
+        await supabase.rpc('cleanup_expired_users');
+      } catch {
+        // cleanup failed or function missing
+      }
+    }
+    runCleanup();
   }, []);
 
   const setUser = useCallback((newUserId, newDisplayName = '') => {
