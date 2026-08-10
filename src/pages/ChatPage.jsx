@@ -100,15 +100,24 @@ export default function ChatPage() {
     return encrypt(plaintext);
   }, [sessionKey, currentEpoch, encrypt]);
 
+  // Use a ref wrapper so effectiveDecrypt always sees the latest cache without
+  // needing the Map object itself in the dependency array (Map refs are stable).
+  const epochKeyCacheRef = useRef(epochKeyCache);
+  useEffect(() => { epochKeyCacheRef.current = epochKeyCache; }, [epochKeyCache]);
+
   const effectiveDecrypt = useCallback(async (ciphertext, iv, epoch) => {
-    if (epoch && epochKeyCache.has(epoch)) {
-      const key = epochKeyCache.get(epoch);
+    if (epoch && epochKeyCacheRef.current.has(epoch)) {
+      const key = epochKeyCacheRef.current.get(epoch);
       const fromB64 = (b64) => { const binary = atob(b64); const bytes = new Uint8Array(binary.length); for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i); return bytes.buffer; };
-      const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(fromB64(iv)) }, key, fromB64(ciphertext));
-      return new TextDecoder().decode(decrypted);
+      try {
+        const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(fromB64(iv)) }, key, fromB64(ciphertext));
+        return new TextDecoder().decode(decrypted);
+      } catch {
+        // epoch key decrypt failed — fall through to base key
+      }
     }
     return decrypt(ciphertext, iv);
-  }, [epochKeyCache, decrypt]);
+  }, [decrypt]);
 
   // --- Feature 2 & 3: Presence with typing encryption + fingerprint detection ---
   const handleFingerprintChange = useCallback(({ userId: peerId, displayName: peerName }) => {
@@ -123,26 +132,30 @@ export default function ChatPage() {
   );
 
   // --- Feature 4: Dead Man Switch ---
+  // Stable callbacks using top-level useCallback so DMS useEffect never re-runs
+  const onDmsWarn = useCallback(() => {
+    addToast('⚠️ No activity detected — room closes in 30 seconds. Send a message to keep it alive.', 'warning');
+  }, [addToast]);
+  const onDmsCountdown = useCallback((secs) => setDmsCountdown(secs), []);
+  const onDmsDestroy = useCallback(() => {
+    addToast('💀 Room auto-destroyed due to inactivity.', 'error');
+    setTimeout(() => { window.location.href = '/dashboard'; }, 1500);
+  }, [addToast]);
+
   const { resetActivity: resetDmsActivity } = useDeadManSwitch({
     roomId: room?.id,
     userId,
     enabled: !!room?.id && keyLoaded,
-    onWarn: useCallback(() => {
-      addToast('⚠️ No activity detected — room closes in 30 seconds. Send a message to keep it alive.', 'warning');
-    }, [addToast]),
-    onCountdown: useCallback((secs) => {
-      setDmsCountdown(secs);
-    }, []),
-    onDestroy: useCallback(() => {
-      addToast('💀 Room auto-destroyed due to inactivity.', 'error');
-      setTimeout(() => { window.location.href = '/dashboard'; }, 1500);
-    }, [addToast]),
+    onWarn: onDmsWarn,
+    onCountdown: onDmsCountdown,
+    onDestroy: onDmsDestroy,
   });
 
   // --- Feature 5: Clipboard Auto-Clear ---
-  useClipboardAutoClear(useCallback(() => {
+  const onClipboardCleared = useCallback(() => {
     addToast('📋 Clipboard cleared for security', 'info');
-  }, [addToast]));
+  }, [addToast]);
+  useClipboardAutoClear(onClipboardCleared);
 
   // --- Feature 6: Access Lock ---
   const { isLocked, unlock } = useAccessLock();

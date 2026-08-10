@@ -8,38 +8,29 @@ const FINAL_COUNTDOWN_AT_MS = 10 * 1000;   // red countdown when 10s left
 /**
  * useDeadManSwitch — auto-destroys the room after 2 minutes of zero activity.
  *
- * Activity signals: message sent, key press in input, scroll in messages area.
- *
- * Timeline:
- *   0:00 → inactivity timer starts
- *   1:30 → yellow warning toast ("Room closes in 30s…")
- *   1:50 → red countdown banner counting 10→0
- *   2:00 → room destroyed, redirect to dashboard
- *
- * Calling `resetActivity()` at any point resets the timer silently.
- *
- * @param {object} opts
- * @param {string} opts.roomId - Supabase room ID
- * @param {string} opts.userId - Current user ID
- * @param {boolean} opts.enabled - Whether the switch is active
- * @param {function} opts.onWarn - Called when warning kicks in (30s remaining)
- * @param {function} opts.onCountdown - Called every second during final 10s countdown with seconds remaining
- * @param {function} opts.onDestroy - Called after room is destroyed
+ * Callbacks (onWarn, onCountdown, onDestroy) are stored in refs so they never
+ * cause the interval useEffect to re-run (which would restart the timer).
  */
 export function useDeadManSwitch({ roomId, userId, enabled, onWarn, onCountdown, onDestroy }) {
   const lastActivityRef = useRef(Date.now());
   const warnFiredRef = useRef(false);
-  const countdownFiredRef = useRef(false);
   const destroyedRef = useRef(false);
   const tickerRef = useRef(null);
+
+  // Store callbacks in refs — never stale, never cause re-runs
+  const onWarnRef = useRef(onWarn);
+  const onCountdownRef = useRef(onCountdown);
+  const onDestroyRef = useRef(onDestroy);
+  useEffect(() => { onWarnRef.current = onWarn; }, [onWarn]);
+  useEffect(() => { onCountdownRef.current = onCountdown; }, [onCountdown]);
+  useEffect(() => { onDestroyRef.current = onDestroy; }, [onDestroy]);
 
   const resetActivity = useCallback(() => {
     lastActivityRef.current = Date.now();
     warnFiredRef.current = false;
-    countdownFiredRef.current = false;
     // Signal 0 to hide countdown banner
-    onCountdown && onCountdown(0);
-  }, [onCountdown]);
+    onCountdownRef.current && onCountdownRef.current(0);
+  }, []);
 
   useEffect(() => {
     if (!enabled || !roomId || !userId) return;
@@ -47,7 +38,6 @@ export function useDeadManSwitch({ roomId, userId, enabled, onWarn, onCountdown,
     destroyedRef.current = false;
     lastActivityRef.current = Date.now();
     warnFiredRef.current = false;
-    countdownFiredRef.current = false;
 
     tickerRef.current = setInterval(async () => {
       if (destroyedRef.current) return;
@@ -57,36 +47,36 @@ export function useDeadManSwitch({ roomId, userId, enabled, onWarn, onCountdown,
       // Warning toast at 30s mark
       if (remaining <= WARNING_AT_MS && !warnFiredRef.current) {
         warnFiredRef.current = true;
-        onWarn && onWarn();
+        onWarnRef.current && onWarnRef.current();
       }
 
-      // Final countdown banner
+      // Final countdown banner (10s)
       if (remaining <= FINAL_COUNTDOWN_AT_MS && remaining > 0) {
-        countdownFiredRef.current = true;
         const secsLeft = Math.ceil(remaining / 1000);
-        onCountdown && onCountdown(secsLeft);
+        onCountdownRef.current && onCountdownRef.current(secsLeft);
       }
 
       // Destroy
       if (remaining <= 0 && !destroyedRef.current) {
         destroyedRef.current = true;
         clearInterval(tickerRef.current);
+        onCountdownRef.current && onCountdownRef.current(0);
         try {
-          // Delete all messages in room
           await supabase.from('messages').delete().eq('room_id', roomId);
-          // Mark room inactive
           await supabase.from('rooms').update({ is_active: false }).eq('id', roomId);
         } catch (err) {
           console.error('[DeadManSwitch] Cleanup failed:', err);
         }
-        onDestroy && onDestroy();
+        onDestroyRef.current && onDestroyRef.current();
       }
     }, 1000);
 
     return () => {
       if (tickerRef.current) clearInterval(tickerRef.current);
     };
-  }, [enabled, roomId, userId, onWarn, onCountdown, onDestroy]);
+  // Only re-run when room/user/enabled changes — NOT on callback changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, roomId, userId]);
 
   return { resetActivity };
 }

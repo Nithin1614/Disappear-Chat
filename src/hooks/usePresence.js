@@ -62,6 +62,11 @@ export function usePresence(roomId, userId, displayName = '', cryptoKey = null, 
   const isSubscribedRef = useRef(false);
   const fingerprintRef = useRef(null);
   const peerFingerprintsRef = useRef({}); // userId -> fingerprint hash
+  // Store volatile props in refs so presence doesn't resubscribe on key rotation
+  const cryptoKeyRef = useRef(cryptoKey);
+  const onFingerprintChangeRef = useRef(onFingerprintChange);
+  useEffect(() => { cryptoKeyRef.current = cryptoKey; }, [cryptoKey]);
+  useEffect(() => { onFingerprintChangeRef.current = onFingerprintChange; }, [onFingerprintChange]);
 
   // Generate fingerprint once on mount
   useEffect(() => {
@@ -81,8 +86,8 @@ export function usePresence(roomId, userId, displayName = '', cryptoKey = null, 
     channel.on('broadcast', { event: 'typing_signal' }, async ({ payload }) => {
       if (!payload || payload.from === userId) return;
       let data = null;
-      if (payload.encrypted && cryptoKey) {
-        data = await decryptTypingPayload(payload.encrypted, cryptoKey);
+      if (payload.encrypted && cryptoKeyRef.current) {
+        data = await decryptTypingPayload(payload.encrypted, cryptoKeyRef.current);
       } else if (payload.plain) {
         // Fallback if no session key yet
         data = payload.plain;
@@ -109,7 +114,7 @@ export function usePresence(roomId, userId, displayName = '', cryptoKey = null, 
           if (fp && key !== userId) {
             const prevFp = peerFingerprintsRef.current[key];
             if (prevFp && prevFp !== fp) {
-              onFingerprintChange && onFingerprintChange({
+              onFingerprintChangeRef.current && onFingerprintChangeRef.current({
                 userId: key,
                 displayName: latest.display_name || key,
               });
@@ -157,7 +162,9 @@ export function usePresence(roomId, userId, displayName = '', cryptoKey = null, 
         channelRef.current = null;
       }
     };
-  }, [roomId, userId, displayName, cryptoKey, onFingerprintChange]);
+  // Only re-subscribe when room/user/displayName changes — NOT on key rotation
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, userId, displayName]);
 
   const trackTyping = useCallback(
     async (isTyping) => {
@@ -176,8 +183,9 @@ export function usePresence(roomId, userId, displayName = '', cryptoKey = null, 
 
       // Feature 2: Encrypt typing signal if session key available
       let broadcastPayload = { from: userId };
-      if (cryptoKey) {
-        const encrypted = await encryptTypingPayload(typingData, cryptoKey);
+      const currentKey = cryptoKeyRef.current;
+      if (currentKey) {
+        const encrypted = await encryptTypingPayload(typingData, currentKey);
         broadcastPayload.encrypted = encrypted;
       } else {
         broadcastPayload.plain = typingData;
@@ -195,8 +203,9 @@ export function usePresence(roomId, userId, displayName = '', cryptoKey = null, 
             const stopData = { user_id: userId, display_name: displayName || userId, is_typing: false };
             (async () => {
               let stopPayload = { from: userId };
-              if (cryptoKey) {
-                stopPayload.encrypted = await encryptTypingPayload(stopData, cryptoKey);
+              const k = cryptoKeyRef.current;
+              if (k) {
+                stopPayload.encrypted = await encryptTypingPayload(stopData, k);
               } else {
                 stopPayload.plain = stopData;
               }
@@ -206,7 +215,7 @@ export function usePresence(roomId, userId, displayName = '', cryptoKey = null, 
         }, 3000);
       }
     },
-    [userId, displayName, cryptoKey]
+    [userId, displayName]
   );
 
   return { onlineMembers, typingUsers, trackTyping };
