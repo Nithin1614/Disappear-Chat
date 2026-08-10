@@ -1,129 +1,86 @@
 import { useCallback, useRef } from 'react';
-import html2canvas from 'html2canvas';
 
-const LAYER_COUNT = 32;
-const ANIMATION_DURATION_MS = 2500;
+const PARTICLE_COUNT = 60;
 
 /**
- * Hook for the Thanos snap disintegration effect.
- * Captures a DOM element via html2canvas, slices into particle layers,
- * and animates them dissolving away.
+ * Hook for in-place Thanos snap text disintegration effect (NO black background, NO skull).
+ * Spawns particle particles floating away from text while dissolving target element with CSS.
+ * Works 100% reliably on all mobile & desktop browsers.
  */
 export function useThanosSnap() {
   const isRunningRef = useRef(false);
 
-  const triggerSnap = useCallback(async (targetElement, onComplete) => {
-    if (isRunningRef.current || !targetElement) return;
+  const triggerSnap = useCallback((targetElement, onComplete) => {
+    if (isRunningRef.current || !targetElement) {
+      if (onComplete) onComplete();
+      return;
+    }
     isRunningRef.current = true;
 
     try {
-      // Capture the element as a canvas
-      const sourceCanvas = await html2canvas(targetElement, {
-        backgroundColor: null,
-        scale: 1,
-        logging: false,
-        useCORS: true,
-      });
-
-      const { width, height } = sourceCanvas;
-      const sourceCtx = sourceCanvas.getContext('2d');
-      const imageData = sourceCtx.getImageData(0, 0, width, height);
-      const pixelData = imageData.data;
-
-      // Create layer canvases
-      const layers = [];
-      const layerCanvases = [];
-
-      for (let i = 0; i < LAYER_COUNT; i++) {
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        canvas.style.position = 'absolute';
-        canvas.style.top = '0';
-        canvas.style.left = '0';
-        canvas.style.transition = `transform ${ANIMATION_DURATION_MS}ms ease-out, opacity ${ANIMATION_DURATION_MS}ms ease-out, filter ${ANIMATION_DURATION_MS}ms ease-out`;
-        canvas.style.pointerEvents = 'none';
-
-        const ctx = canvas.getContext('2d');
-        const data = ctx.createImageData(width, height);
-        layers.push({ canvas, ctx, data });
-        layerCanvases.push(canvas);
-      }
-
-      // Distribute pixels across layers with gaussian-weighted randomness
-      for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-          const idx = (y * width + x) * 4;
-          // Skip transparent pixels
-          if (pixelData[idx + 3] === 0) continue;
-
-          // Weight distribution: outer pixels go to earlier layers
-          const cx = width / 2;
-          const cy = height / 2;
-          const distFromCenter = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
-          const maxDist = Math.sqrt(cx ** 2 + cy ** 2);
-          const normalizedDist = distFromCenter / maxDist;
-
-          // Gaussian-weighted layer selection
-          const baseLayer = Math.floor(normalizedDist * (LAYER_COUNT - 1));
-          const jitter = Math.floor((Math.random() - 0.5) * 8);
-          const layerIdx = Math.max(0, Math.min(LAYER_COUNT - 1, baseLayer + jitter));
-
-          const layer = layers[layerIdx];
-          layer.data.data[idx] = pixelData[idx];
-          layer.data.data[idx + 1] = pixelData[idx + 1];
-          layer.data.data[idx + 2] = pixelData[idx + 2];
-          layer.data.data[idx + 3] = pixelData[idx + 3];
-        }
-      }
-
-      // Put image data onto each layer canvas
-      layers.forEach((layer) => {
-        layer.ctx.putImageData(layer.data, 0, 0);
-      });
-
-      // Position overlay container
       const rect = targetElement.getBoundingClientRect();
-      const container = document.createElement('div');
-      container.style.position = 'fixed';
-      container.style.top = `${rect.top}px`;
-      container.style.left = `${rect.left}px`;
-      container.style.width = `${width}px`;
-      container.style.height = `${height}px`;
-      container.style.zIndex = '9999';
-      container.style.pointerEvents = 'none';
-      container.style.overflow = 'visible';
 
-      layerCanvases.forEach((canvas) => container.appendChild(canvas));
-      document.body.appendChild(container);
+      // Create particle overlay container over target element
+      const overlay = document.createElement('div');
+      overlay.style.position = 'fixed';
+      overlay.style.top = `${rect.top}px`;
+      overlay.style.left = `${rect.left}px`;
+      overlay.style.width = `${rect.width}px`;
+      overlay.style.height = `${rect.height}px`;
+      overlay.style.pointerEvents = 'none';
+      overlay.style.zIndex = '99999';
+      overlay.style.overflow = 'visible';
 
-      // Hide original element
-      targetElement.style.opacity = '0';
+      // Generate particles over the target element area
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const p = document.createElement('div');
+        const size = Math.random() * 6 + 2;
+        const x = Math.random() * rect.width;
+        const y = Math.random() * rect.height;
+        const driftX = (Math.random() - 0.4) * 160;
+        const driftY = -(Math.random() * 120 + 30);
+        const duration = Math.random() * 1.5 + 1.2; // 1.2s to 2.7s
+        const delay = Math.random() * 0.6;
+        const hue = Math.random() > 0.5 ? 270 : 330; // Purple / Pink cyber particles
 
-      // Stagger-animate each layer
-      requestAnimationFrame(() => {
-        layers.forEach((layer, i) => {
-          const delay = (i / LAYER_COUNT) * 800;
+        p.style.position = 'absolute';
+        p.style.left = `${x}px`;
+        p.style.top = `${y}px`;
+        p.style.width = `${size}px`;
+        p.style.height = `${size}px`;
+        p.style.borderRadius = '50%';
+        p.style.background = `hsl(${hue}, 85%, 65%)`;
+        p.style.boxShadow = `0 0 8px hsl(${hue}, 90%, 60%)`;
+        p.style.transition = `transform ${duration}s ease-out ${delay}s, opacity ${duration}s ease-out ${delay}s, filter ${duration}s ease-out ${delay}s`;
+        p.style.opacity = '1';
+
+        overlay.appendChild(p);
+
+        // Trigger particle animation on next frame
+        requestAnimationFrame(() => {
           setTimeout(() => {
-            const translateX = (Math.random() - 0.3) * 200;
-            const translateY = -(Math.random() * 100 + 30);
-            const rotate = (Math.random() - 0.5) * 45;
-
-            layer.canvas.style.transform = `translate(${translateX}px, ${translateY}px) rotate(${rotate}deg)`;
-            layer.canvas.style.opacity = '0';
-            layer.canvas.style.filter = 'blur(3px)';
-          }, delay);
+            p.style.transform = `translate(${driftX}px, ${driftY}px) scale(0.1)`;
+            p.style.opacity = '0';
+            p.style.filter = 'blur(4px)';
+          }, 20);
         });
-      });
+      }
 
-      // Cleanup after animation
+      document.body.appendChild(overlay);
+
+      // Apply disintegration CSS to target text/chat element
+      targetElement.style.transition = 'transform 2.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 2.2s cubic-bezier(0.25, 1, 0.5, 1), filter 2.2s cubic-bezier(0.25, 1, 0.5, 1)';
+      targetElement.style.transform = 'translateY(-20px) scale(0.96) rotate(-1deg)';
+      targetElement.style.opacity = '0';
+      targetElement.style.filter = 'blur(10px) contrast(1.5)';
+
+      // Clean up after 2.8s & trigger completion callback
       setTimeout(() => {
-        if (container.parentNode) {
-          container.parentNode.removeChild(container);
-        }
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
         isRunningRef.current = false;
         if (onComplete) onComplete();
-      }, ANIMATION_DURATION_MS + 1000);
+      }, 2800);
+
     } catch (err) {
       console.error('Thanos snap failed:', err);
       isRunningRef.current = false;

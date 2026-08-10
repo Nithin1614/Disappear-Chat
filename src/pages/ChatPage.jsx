@@ -120,22 +120,12 @@ export default function ChatPage() {
     };
   }, [room?.id, userId]);
 
-  // 2-person room: auto-terminate when partner exits
+  // Track partner connection status gently without kicking user
   useEffect(() => {
     if (!room || room.max_members !== 2) return;
     const count = onlineMembers.length;
-    const prevCount = prevMemberCountRef.current;
     prevMemberCountRef.current = count;
-
-    // Someone just left (had 2, now have 1 or 0) and it's not the initial load
-    if (prevCount === 2 && count < 2 && !partnerLeftToast) {
-      setPartnerLeftToast(true);
-      addToast('Your chat partner has left the room.', 'info');
-      // Mark room inactive
-      supabase.from('rooms').update({ is_active: false }).eq('id', room.id).then(() => {});
-      setTimeout(() => { window.location.href = '/dashboard'; }, 3000);
-    }
-  }, [onlineMembers, room, partnerLeftToast, addToast]);
+  }, [onlineMembers, room]);
 
   // Decrypt text messages
   useEffect(() => {
@@ -213,12 +203,14 @@ export default function ChatPage() {
     }
   }, [countdown.inGracePeriod, countdown.isExpired, showGraceBanner]);
 
-  // Thanos snap trigger — only after grace period ends
+  // Thanos snap trigger — only after grace period ends (disintegrates chat text in place, no black background)
   useEffect(() => {
     if (countdown.isExpired && countdown.timerStarted && !countdown.inGracePeriod && !snapTriggered) {
       setSnapTriggered(true);
       if (chatContainerRef.current) {
-        triggerSnap(chatContainerRef.current, () => {});
+        triggerSnap(chatContainerRef.current, () => {
+          window.location.href = '/dashboard';
+        });
       }
     }
   }, [countdown.isExpired, countdown.timerStarted, countdown.inGracePeriod, snapTriggered, triggerSnap]);
