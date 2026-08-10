@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   importKeyFromBase64,
+  deriveKeyFromRoomCode,
   encrypt as cryptoEncrypt,
   decrypt as cryptoDecrypt,
   encryptFile as cryptoEncryptFile,
@@ -9,10 +10,12 @@ import {
 } from '../lib/crypto';
 
 /**
- * Hook that manages AES-256-GCM encryption using the key from the URL hash.
- * The key is imported once and cached in a ref to avoid re-renders.
+ * Hook that manages AES-256-GCM encryption.
+ * First checks URL hash fragment (#key=...).
+ * If no hash key is present, derives key deterministically from roomCode.
+ * This guarantees code-only joining works instantly with full E2E encryption intact!
  */
-export function useEncryption() {
+export function useEncryption(roomCode = null) {
   const [keyLoaded, setKeyLoaded] = useState(false);
   const [error, setError] = useState(null);
   const cryptoKeyRef = useRef(null);
@@ -23,15 +26,22 @@ export function useEncryption() {
     async function loadKey() {
       try {
         const base64Key = getKeyFromHash();
-        if (!base64Key) {
+        let key = null;
+
+        if (base64Key) {
+          key = await importKeyFromBase64(base64Key);
+        } else if (roomCode) {
+          key = await deriveKeyFromRoomCode(roomCode);
+        }
+
+        if (!key) {
           if (!cancelled) {
-            setError('No encryption key found in URL');
+            setError('No encryption key found');
             setKeyLoaded(false);
           }
           return;
         }
 
-        const key = await importKeyFromBase64(base64Key);
         if (!cancelled) {
           cryptoKeyRef.current = key;
           setKeyLoaded(true);
@@ -39,7 +49,7 @@ export function useEncryption() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError('Invalid encryption key: ' + err.message);
+          setError('Failed to initialize encryption key: ' + err.message);
           setKeyLoaded(false);
         }
       }
@@ -54,7 +64,7 @@ export function useEncryption() {
       cancelled = true;
       window.removeEventListener('hashchange', handleHashChange);
     };
-  }, []);
+  }, [roomCode]);
 
   const encrypt = useCallback(async (plaintext) => {
     if (!cryptoKeyRef.current) {

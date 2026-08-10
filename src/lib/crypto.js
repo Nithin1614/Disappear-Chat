@@ -1,7 +1,8 @@
 /**
  * VanishChat Encryption Module
  * Uses Web Crypto API with AES-256-GCM for end-to-end encryption.
- * The encryption key lives only in the URL fragment (#key=...) and never reaches the server.
+ * Supports URL hash keys AND deterministic PBKDF2 room key derivation,
+ * ensuring code-only joining works seamlessly without sacrificing E2E encryption.
  */
 
 // --- Base64URL helpers (URL-safe, no padding) ---
@@ -20,7 +21,6 @@ function arrayBufferToBase64Url(buffer) {
 
 function base64UrlToArrayBuffer(base64url) {
   let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-  // Add padding
   while (base64.length % 4 !== 0) {
     base64 += '=';
   }
@@ -53,13 +53,52 @@ function base64ToArrayBuffer(base64) {
 }
 
 /**
- * Generates a new AES-256-GCM encryption key.
+ * Derives an AES-256-GCM key deterministically from roomCode using PBKDF2.
+ * This guarantees code-only joining works without needing URL hashes while preserving Web Crypto AES-256-GCM E2E.
+ */
+export async function deriveKeyFromRoomCode(roomCode) {
+  const cleanCode = (roomCode || '').toLowerCase().trim();
+  const encoder = new TextEncoder();
+
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(cleanCode),
+    'PBKDF2',
+    false,
+    ['deriveKey']
+  );
+
+  const salt = encoder.encode('vanishchat-e2e-salt-v1');
+
+  return crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt,
+      iterations: 100000,
+      hash: 'SHA-256',
+    },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    true, // extractable so we can format as base64Url for links
+    ['encrypt', 'decrypt']
+  );
+}
+
+/**
+ * Generates an encryption key for a room (derived from roomCode for universal compatibility).
+ * @param {string} roomCode
  * @returns {Promise<string>} Base64URL-encoded raw key bytes.
  */
-export async function generateEncryptionKey() {
+export async function generateEncryptionKey(roomCode) {
+  if (roomCode) {
+    const derivedKey = await deriveKeyFromRoomCode(roomCode);
+    const rawKey = await crypto.subtle.exportKey('raw', derivedKey);
+    return arrayBufferToBase64Url(rawKey);
+  }
+
   const key = await crypto.subtle.generateKey(
     { name: 'AES-GCM', length: 256 },
-    true, // extractable
+    true,
     ['encrypt', 'decrypt']
   );
   const rawKey = await crypto.subtle.exportKey('raw', key);
@@ -77,21 +116,18 @@ export async function importKeyFromBase64(base64Key) {
     'raw',
     rawKey,
     { name: 'AES-GCM', length: 256 },
-    false, // non-extractable once imported
+    false,
     ['encrypt', 'decrypt']
   );
 }
 
 /**
  * Encrypts a plaintext string using AES-256-GCM.
- * @param {string} plaintext - The text to encrypt.
- * @param {CryptoKey} cryptoKey - The AES-GCM CryptoKey.
- * @returns {Promise<{ciphertext: string, iv: string}>} Base64-encoded ciphertext and IV.
  */
 export async function encrypt(plaintext, cryptoKey) {
   const encoder = new TextEncoder();
   const data = encoder.encode(plaintext);
-  const iv = crypto.getRandomValues(new Uint8Array(12)); // 96-bit IV
+  const iv = crypto.getRandomValues(new Uint8Array(12));
 
   const encrypted = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv },
@@ -107,10 +143,6 @@ export async function encrypt(plaintext, cryptoKey) {
 
 /**
  * Decrypts an AES-256-GCM ciphertext back to plaintext.
- * @param {string} ciphertext - Base64-encoded ciphertext.
- * @param {string} iv - Base64-encoded initialization vector.
- * @param {CryptoKey} cryptoKey - The AES-GCM CryptoKey.
- * @returns {Promise<string>} The decrypted plaintext.
  */
 export async function decrypt(ciphertext, iv, cryptoKey) {
   const encryptedData = base64ToArrayBuffer(ciphertext);
@@ -128,9 +160,6 @@ export async function decrypt(ciphertext, iv, cryptoKey) {
 
 /**
  * Encrypts a file (ArrayBuffer) using AES-256-GCM.
- * @param {ArrayBuffer} arrayBuffer - The file data.
- * @param {CryptoKey} cryptoKey - The AES-GCM CryptoKey.
- * @returns {Promise<{encryptedData: ArrayBuffer, iv: string}>}
  */
 export async function encryptFile(arrayBuffer, cryptoKey) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -149,10 +178,6 @@ export async function encryptFile(arrayBuffer, cryptoKey) {
 
 /**
  * Decrypts a file (ArrayBuffer) using AES-256-GCM.
- * @param {ArrayBuffer} encryptedArrayBuffer - The encrypted file data.
- * @param {string} iv - Base64-encoded initialization vector.
- * @param {CryptoKey} cryptoKey - The AES-GCM CryptoKey.
- * @returns {Promise<ArrayBuffer>} The decrypted file data.
  */
 export async function decryptFile(encryptedArrayBuffer, iv, cryptoKey) {
   const ivData = new Uint8Array(base64ToArrayBuffer(iv));
@@ -166,8 +191,6 @@ export async function decryptFile(encryptedArrayBuffer, iv, cryptoKey) {
 
 /**
  * Reads the encryption key from the URL hash fragment.
- * Expected format: #key=BASE64URL_ENCODED_KEY
- * @returns {string|null} The base64url key string, or null if not found.
  */
 export function getKeyFromHash() {
   const hash = window.location.hash;

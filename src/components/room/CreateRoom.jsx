@@ -38,7 +38,7 @@ export default function CreateRoom() {
     setLoading(true);
     try {
       const roomCode = generateRoomCode();
-      const key = await generateEncryptionKey();
+      const key = await generateEncryptionKey(roomCode);
       const { data, error } = await supabase.from('rooms').insert({
         room_code: roomCode, created_by: userId,
         duration_minutes: duration, max_members: mode === 'private' ? 2 : maxMembers,

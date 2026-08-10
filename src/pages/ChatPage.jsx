@@ -51,7 +51,7 @@ export default function ChatPage() {
   const prevMessageCountRef = useRef(0);
 
   // --- Hooks Preserved ---
-  const { encrypt, decrypt, encryptFile: encryptFileHook, keyLoaded, error: keyError } = useEncryption();
+  const { encrypt, decrypt, encryptFile: encryptFileHook, keyLoaded, error: keyError } = useEncryption(roomCode);
   const { messages, sendMessage, loading: messagesLoading } = useRealtimeMessages(room?.id);
   const { onlineMembers, typingUsers, trackTyping } = usePresence(room?.id, userId, displayName);
   const countdown = useCountdown(room?.expires_at, room?.duration_minutes);
