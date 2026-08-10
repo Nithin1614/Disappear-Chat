@@ -56,6 +56,16 @@ export default function SecretLinkPage() {
     fetchLink();
   }, [token]);
 
+function calculateSelfDestructSeconds(text) {
+  if (!text || !text.trim()) return 5;
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  if (words <= 1) return 5;
+  if (words === 2) return 6;
+  if (words === 3) return 7;
+  if (words <= 10) return 3 + words;
+  return 5 + words;
+}
+
   const handleReveal = async () => {
     if (!linkData) return;
     setState('reading');
@@ -68,8 +78,11 @@ export default function SecretLinkPage() {
       // Delete from DB immediately
       await supabase.from('secret_links').delete().eq('token', token);
 
+      const initialSeconds = calculateSelfDestructSeconds(decrypted);
+      setCountdown(initialSeconds);
+
       setState('read');
-      let c = 20;
+      let c = initialSeconds;
       const interval = setInterval(() => {
         c--;
         setCountdown(c);

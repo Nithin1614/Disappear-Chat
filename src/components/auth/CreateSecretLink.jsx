@@ -77,25 +77,42 @@ export default function CreateSecretLink() {
     } catch {}
   };
 
+  const wordCount = messageText.trim() ? messageText.trim().split(/\s+/).filter(Boolean).length : 0;
+  const calculatedSeconds = (() => {
+    if (wordCount <= 1) return 5;
+    if (wordCount === 2) return 6;
+    if (wordCount === 3) return 7;
+    if (wordCount <= 10) return 3 + wordCount;
+    return 5 + wordCount;
+  })();
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
       <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
         Create a one-time encrypted link. The message is deleted permanently after the recipient reads it.
       </p>
 
-      <textarea
-        value={messageText}
-        onChange={e => setMessageText(e.target.value)}
-        placeholder="Type your secret message…"
-        rows={4}
-        style={{
-          background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '10px',
-          color: 'var(--text)', padding: '12px 14px', fontSize: '14px', fontFamily: 'inherit',
-          resize: 'vertical', outline: 'none', width: '100%', lineHeight: 1.5
-        }}
-        onFocus={e => e.target.style.borderColor = 'var(--danger)'}
-        onBlur={e => e.target.style.borderColor = 'var(--border)'}
-      />
+      <div>
+        <textarea
+          value={messageText}
+          onChange={e => setMessageText(e.target.value)}
+          placeholder="Type your secret message…"
+          rows={4}
+          style={{
+            background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '10px',
+            color: 'var(--text)', padding: '12px 14px', fontSize: '14px', fontFamily: 'inherit',
+            resize: 'vertical', outline: 'none', width: '100%', lineHeight: 1.5
+          }}
+          onFocus={e => e.target.style.borderColor = 'var(--danger)'}
+          onBlur={e => e.target.style.borderColor = 'var(--border)'}
+        />
+        {messageText.trim() && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '11px', color: 'var(--danger)', fontWeight: 600 }}>
+            <Flame size={12} />
+            <span>Self-destruct timer: {calculatedSeconds}s after reveal ({wordCount} word{wordCount !== 1 ? 's' : ''})</span>
+          </div>
+        )}
+      </div>
 
       {/* TTL selector */}
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
