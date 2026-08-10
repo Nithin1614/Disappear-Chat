@@ -3,20 +3,10 @@ import { supabase } from '../lib/supabase';
 
 const KEY_ROTATION_MS = 5 * 60 * 1000; // 5 minutes
 
-/**
- * Generates a fresh random AES-256-GCM ephemeral key.
- */
 async function generateEphemeralKey() {
-  return crypto.subtle.generateKey(
-    { name: 'AES-GCM', length: 256 },
-    true,
-    ['encrypt', 'decrypt']
-  );
+  return crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
 }
 
-/**
- * Exports a CryptoKey to raw base64.
- */
 async function exportKeyToBase64(cryptoKey) {
   const raw = await crypto.subtle.exportKey('raw', cryptoKey);
   const bytes = new Uint8Array(raw);
@@ -25,91 +15,61 @@ async function exportKeyToBase64(cryptoKey) {
   return btoa(binary);
 }
 
-/**
- * Imports a raw base64 string back to a CryptoKey.
- */
 async function importKeyFromBase64(base64) {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return crypto.subtle.importKey(
-    'raw',
-    bytes.buffer,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt', 'decrypt']
-  );
+  return crypto.subtle.importKey('raw', bytes.buffer, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
 }
 
-/**
- * Encrypts a session key (base64) with the base room key (AES-GCM).
- */
 async function encryptSessionKeyPayload(sessionKeyBase64, baseKey) {
   const enc = new TextEncoder();
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    baseKey,
-    enc.encode(sessionKeyBase64)
-  );
-  const toBase64 = (buf) => {
-    const b = new Uint8Array(buf);
-    let s = '';
-    for (let i = 0; i < b.byteLength; i++) s += String.fromCharCode(b[i]);
-    return btoa(s);
-  };
+  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, baseKey, enc.encode(sessionKeyBase64));
+  const toBase64 = (buf) => { const b = new Uint8Array(buf); let s = ''; for (let i = 0; i < b.byteLength; i++) s += String.fromCharCode(b[i]); return btoa(s); };
   return { encryptedKey: toBase64(encrypted), iv: toBase64(iv.buffer) };
 }
 
-/**
- * Decrypts a session key payload with the base room key.
- */
 async function decryptSessionKeyPayload(encryptedKey, iv, baseKey) {
-  const fromBase64 = (b64) => {
-    const binary = atob(b64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    return bytes.buffer;
-  };
-  const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: new Uint8Array(fromBase64(iv)) },
-    baseKey,
-    fromBase64(encryptedKey)
-  );
+  const fromBase64 = (b64) => { const bin = atob(b64); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return bytes.buffer; };
+  const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(fromBase64(iv)) }, baseKey, fromBase64(encryptedKey));
   return new TextDecoder().decode(decrypted);
 }
 
 /**
- * useForwardSecrecy — manages per-session ephemeral encryption keys.
+ * useForwardSecrecy — manages per-session ephemeral AES-256-GCM keys.
  *
- * - On room entry: generates a new random AES-256-GCM session key
- * - Broadcasts it (encrypted under baseKey) to all room participants
- * - Rotates every 5 minutes — discarding old keys from memory after rotation
- * - Old epochs are cached for decrypting previously received messages
+ * FIX: Now exports `epochCacheVersion` (a counter that increments whenever
+ * a new key is added to the cache). ChatPage's decryption effect depends on
+ * this counter, so it re-runs automatically when late-joiner keys arrive.
  *
- * FIX: Late joiners broadcast a `request_session_key` event so any already-present
- * participant can re-send their current key. This solves the "User A joins first,
- * sends a message, User B joins later and can't decrypt it" problem.
- *
- * @param {string} roomId - Supabase room ID
- * @param {string} userId - Current user ID
- * @param {CryptoKey|null} baseKey - The deterministic PBKDF2 room key
- * @returns {{ sessionKey: CryptoKey|null, epochKeyCache: Map, currentEpoch: number, isReady: boolean }}
+ * FIX: `request_session_key` handshake — when a late-joiner subscribes they
+ * broadcast this event, and any already-present participant re-sends their
+ * current key so the late-joiner can decrypt already-stored messages.
  */
 export function useForwardSecrecy(roomId, userId, baseKey) {
   const [sessionKey, setSessionKey] = useState(null);
   const [currentEpoch, setCurrentEpoch] = useState(0);
   const [isReady, setIsReady] = useState(false);
+  // *** KEY FIX: version counter that ticks every time a key is added to cache ***
+  const [epochCacheVersion, setEpochCacheVersion] = useState(0);
+
   const epochKeyCacheRef = useRef(new Map()); // epoch -> CryptoKey
   const channelRef = useRef(null);
   const rotationTimerRef = useRef(null);
   const onRotateCallbackRef = useRef(null);
 
-  // Stable refs so callbacks inside channel handlers always see latest values
+  // Stable refs so channel callbacks always see latest values without stale closures
   const currentEpochRef = useRef(0);
   const currentSessionKeyRef = useRef(null);
   useEffect(() => { currentEpochRef.current = currentEpoch; }, [currentEpoch]);
   useEffect(() => { currentSessionKeyRef.current = sessionKey; }, [sessionKey]);
+
+  // Helper: add key to cache AND bump version so decryption effect re-runs
+  const cacheKey = useCallback((epoch, key) => {
+    epochKeyCacheRef.current.set(epoch, key);
+    setEpochCacheVersion(v => v + 1); // *** triggers re-decryption in ChatPage ***
+  }, []);
 
   const broadcastCurrentKey = useCallback(async (broadcastChannel) => {
     if (!baseKey || !broadcastChannel || !currentSessionKeyRef.current || !currentEpochRef.current) return;
@@ -133,7 +93,6 @@ export function useForwardSecrecy(roomId, userId, baseKey) {
       const newKeyB64 = await exportKeyToBase64(newKey);
       const newEpoch = Date.now();
 
-      // Encrypt and broadcast the new session key to peers
       const { encryptedKey, iv } = await encryptSessionKeyPayload(newKeyB64, baseKey);
       broadcastChannel.send({
         type: 'broadcast',
@@ -141,14 +100,13 @@ export function useForwardSecrecy(roomId, userId, baseKey) {
         payload: { encryptedKey, iv, epoch: newEpoch, from: userId },
       });
 
-      // Store in cache for decryption of in-flight messages
-      epochKeyCacheRef.current.set(newEpoch, newKey);
-
-      // Discard keys older than 2 rotation cycles
+      // Prune old keys (keep 2 rotation windows)
       const cutoff = newEpoch - KEY_ROTATION_MS * 2;
       for (const [ep] of epochKeyCacheRef.current) {
         if (ep < cutoff) epochKeyCacheRef.current.delete(ep);
       }
+
+      cacheKey(newEpoch, newKey); // bumps epochCacheVersion
 
       currentEpochRef.current = newEpoch;
       currentSessionKeyRef.current = newKey;
@@ -161,9 +119,8 @@ export function useForwardSecrecy(roomId, userId, baseKey) {
     } catch (err) {
       console.error('[ForwardSecrecy] Key rotation failed:', err);
     }
-  }, [baseKey, userId]);
+  }, [baseKey, userId, cacheKey]);
 
-  // Register a callback that fires on each key rotation (used by ChatPage for toast)
   const onRotate = useCallback((cb) => {
     onRotateCallbackRef.current = cb;
   }, []);
@@ -176,54 +133,42 @@ export function useForwardSecrecy(roomId, userId, baseKey) {
       config: { broadcast: { self: false } },
     });
 
-    // Listen for session key rotations from other participants
+    // Receive session key from any peer (rotation or handshake response)
     channel.on('broadcast', { event: 'session_key_rotate' }, async ({ payload }) => {
       if (cancelled || !payload || payload.from === userId) return;
       try {
-        const decryptedKeyB64 = await decryptSessionKeyPayload(
-          payload.encryptedKey, payload.iv, baseKey
-        );
+        const decryptedKeyB64 = await decryptSessionKeyPayload(payload.encryptedKey, payload.iv, baseKey);
         const importedKey = await importKeyFromBase64(decryptedKeyB64);
 
-        // Always cache every epoch key received — even if it's an older epoch
-        epochKeyCacheRef.current.set(payload.epoch, importedKey);
+        // Always cache — even older epochs — so late joiners can decrypt past msgs
+        cacheKey(payload.epoch, importedKey); // *** bumps epochCacheVersion ***
 
-        if (!cancelled) {
-          // Update session key if this epoch is newer than what we have
-          if (payload.epoch >= currentEpochRef.current) {
-            currentSessionKeyRef.current = importedKey;
-            currentEpochRef.current = payload.epoch;
-            setSessionKey(importedKey);
-            setCurrentEpoch(payload.epoch);
-            setIsReady(true);
-          }
+        if (!cancelled && payload.epoch >= currentEpochRef.current) {
+          currentSessionKeyRef.current = importedKey;
+          currentEpochRef.current = payload.epoch;
+          setSessionKey(importedKey);
+          setCurrentEpoch(payload.epoch);
+          setIsReady(true);
         }
       } catch (err) {
         console.error('[ForwardSecrecy] Failed to receive peer key:', err);
       }
     });
 
-    // *** KEY FIX: When a peer signals they just joined, re-broadcast our current key to them ***
+    // Late-joiner handshake: peer asks for the current key
     channel.on('broadcast', { event: 'request_session_key' }, async ({ payload }) => {
       if (cancelled || !payload || payload.from === userId) return;
-      // Re-send our current session key so the late joiner can decrypt past messages
       await broadcastCurrentKey(channel);
     });
 
     channel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED' && !cancelled) {
         channelRef.current = channel;
-        // Generate and broadcast initial session key
+        // Generate and broadcast our own key
         await rotateKey(channel);
-
-        // Also request any existing peer's keys (in case we are the late joiner)
-        channel.send({
-          type: 'broadcast',
-          event: 'request_session_key',
-          payload: { from: userId },
-        });
-
-        // Schedule rotation every 5 minutes
+        // Also request any existing peer's key (we might be the late joiner)
+        channel.send({ type: 'broadcast', event: 'request_session_key', payload: { from: userId } });
+        // Schedule key rotation every 5 minutes
         rotationTimerRef.current = setInterval(() => rotateKey(channel), KEY_ROTATION_MS);
       }
     });
@@ -236,12 +181,13 @@ export function useForwardSecrecy(roomId, userId, baseKey) {
         channelRef.current = null;
       }
     };
-  }, [roomId, userId, baseKey, rotateKey, broadcastCurrentKey]);
+  }, [roomId, userId, baseKey, rotateKey, broadcastCurrentKey, cacheKey]);
 
   return {
     sessionKey,
     currentEpoch,
     epochKeyCache: epochKeyCacheRef.current,
+    epochCacheVersion, // *** new: lets ChatPage react when new keys arrive ***
     isReady,
     onRotate,
   };

@@ -75,6 +75,7 @@ export default function ChatPage() {
     sessionKey,
     currentEpoch,
     epochKeyCache,
+    epochCacheVersion, // ticks whenever a new epoch key is cached (late-joiner fix)
     isReady: fsReady,
     onRotate,
   } = useForwardSecrecy(room?.id, userId, cryptoKey);
@@ -266,13 +267,15 @@ export default function ChatPage() {
     prevMemberCountRef.current = count;
   }, [onlineMembers, room]);
 
-  // Decrypt text messages — try session epoch key first, fallback to base key
+  // Decrypt text messages — retry whenever keys, messages, or epoch cache version change
+  // epochCacheVersion ticks each time a new key is added (late-joiner handshake fix)
   useEffect(() => {
     if (!keyLoaded || !messages.length) return;
     (async () => {
       let changed = false;
       const updated = { ...decryptedMessages };
       for (const msg of messages) {
+        // Re-attempt any previously failed decryptions when new keys arrive
         if (updated[msg.id] && updated[msg.id] !== '[Decryption failed]') continue;
         try {
           if (msg.encrypted_content && msg.iv) {
@@ -291,7 +294,8 @@ export default function ChatPage() {
       }
       if (changed) setDecryptedMessages(updated);
     })();
-  }, [messages, keyLoaded, effectiveDecrypt, sessionKey, epochKeyCache]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, keyLoaded, effectiveDecrypt, sessionKey, epochCacheVersion]);
 
   // Decrypt inline images
   useEffect(() => {
@@ -358,6 +362,8 @@ export default function ChatPage() {
   useEffect(() => {
     if (countdown.isExpired && countdown.timerStarted && !countdown.inGracePeriod && !snapTriggered) {
       setSnapTriggered(true);
+      // Room expired — clear re-entry token so dashboard doesn't offer rejoin
+      try { sessionStorage.removeItem('vanishchat_last_active_room'); } catch {}
       if (chatContainerRef.current) {
         triggerSnap(chatContainerRef.current, () => {
           window.location.href = '/dashboard';

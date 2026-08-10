@@ -28,8 +28,8 @@ export default function UserSearch() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const trimmed = query.trim();
 
-    // Need at least 2 chars before showing any results
-    if (trimmed.length < 2) {
+    // Need at least 4 chars before showing any results
+    if (trimmed.length < 4) {
       setResults([]);
       setSearched(false);
       return;
@@ -206,9 +206,9 @@ export default function UserSearch() {
       </div>
 
       {/* Hint text */}
-      {query.trim().length === 1 && (
+      {query.trim().length > 0 && query.trim().length < 4 && (
         <p style={{ fontSize: '12px', color: 'var(--text-dim)', margin: '-6px 0 0 2px' }}>
-          Type at least 2 characters to search…
+          Type at least 4 characters to search…
         </p>
       )}
 

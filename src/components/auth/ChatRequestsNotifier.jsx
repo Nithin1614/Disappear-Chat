@@ -1,16 +1,21 @@
-import { useState, useEffect } from 'react';
-import { MessageSquare, Check, X, Bell, Shield } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { MessageSquare, Check, X, Bell, BellOff, Shield } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../context/ToastContext';
+import { useNotificationSound } from '../../hooks/useNotificationSound';
 
 /**
- * Floating chat request notifications & direct chat synchronization listener.
- * Mobile-aligned layout + instant single-use session lifecycle.
+ * Floating chat request notifications — in-app only, no OS popups.
+ * Desktop: fixed bottom-right panel (max 360px).
+ * Mobile: fixed bottom center, full width minus padding.
+ * Sound toggle persisted in localStorage.
  */
 export default function ChatRequestsNotifier({ userId }) {
   const [requests, setRequests] = useState([]);
   const [accepting, setAccepting] = useState(null);
   const { addToast } = useToast();
+  const { playSound, isMuted, toggleMute } = useNotificationSound();
+  const lastCountRef = useRef(0);
 
   // Incoming requests listener (target_id = userId)
   useEffect(() => {
@@ -24,7 +29,16 @@ export default function ChatRequestsNotifier({ userId }) {
         .eq('target_id', userId)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
-      setRequests(data || []);
+
+      const fresh = data || [];
+
+      // Play chime when new requests arrive
+      if (fresh.length > lastCountRef.current) {
+        playSound();
+      }
+      lastCountRef.current = fresh.length;
+
+      setRequests(fresh);
     };
 
     fetchRequests();
@@ -40,16 +54,17 @@ export default function ChatRequestsNotifier({ userId }) {
       }, fetchRequests)
       .subscribe();
 
-    // 2. Instant Realtime Broadcast channel (0ms latency trigger)
+    // 2. Instant broadcast channel (0ms latency)
     const broadcastChannel = supabase
       .channel(`user_direct_notify:${userId}`)
       .on('broadcast', { event: 'new_chat_request' }, (payload) => {
         addToast(`🔔 New chat request from ${payload.payload?.sender_name || 'a user'}!`, 'info');
+        playSound();
         fetchRequests();
       })
       .subscribe();
 
-    // 3. Fast 2.5s poll fallback (backup safety net)
+    // 3. Fast 2.5s poll fallback
     const pollInterval = setInterval(fetchRequests, 2500);
 
     return () => {
@@ -57,9 +72,9 @@ export default function ChatRequestsNotifier({ userId }) {
       supabase.removeChannel(broadcastChannel);
       clearInterval(pollInterval);
     };
-  }, [userId, addToast]);
+  }, [userId, addToast, playSound]);
 
-  // Outgoing requests listener (sender_id = userId) — redirects sender as soon as target accepts!
+  // Outgoing requests listener — redirect sender when target accepts
   useEffect(() => {
     if (!userId) return;
 
@@ -73,8 +88,7 @@ export default function ChatRequestsNotifier({ userId }) {
       }, (payload) => {
         if (payload.new && payload.new.status === 'accepted') {
           const roomCode = payload.new.room_code;
-          addToast('Chat request accepted! Entering room with partner…', 'success');
-          // Instantly mark completed in DB so it is cleaned up and never prompts again on exit/return!
+          addToast('Chat request accepted! Entering room…', 'success');
           supabase.from('chat_requests').update({ status: 'completed' }).eq('id', payload.new.id).then(() => {});
           setTimeout(() => {
             if (!window.location.pathname.includes(`/room/${roomCode}`)) {
@@ -93,7 +107,6 @@ export default function ChatRequestsNotifier({ userId }) {
     setAccepting(req.id);
 
     try {
-      // Verify room still exists and is active
       const { data: room, error: roomErr } = await supabase
         .from('rooms')
         .select('id, is_active, expires_at')
@@ -116,19 +129,12 @@ export default function ChatRequestsNotifier({ userId }) {
         return;
       }
 
-      // Add recipient as room member
       await supabase.from('room_members').upsert(
         { room_id: room.id, user_id: userId, is_online: true },
         { onConflict: 'room_id,user_id' }
       );
 
-      // Mark request as accepted in DB (triggers sender's listener)
-      await supabase
-        .from('chat_requests')
-        .update({ status: 'accepted' })
-        .eq('id', req.id);
-
-      // Remove from local notification list immediately
+      await supabase.from('chat_requests').update({ status: 'accepted' }).eq('id', req.id);
       setRequests(prev => prev.filter(r => r.id !== req.id));
 
       addToast('Accepted! Entering chat…', 'success');
@@ -141,151 +147,86 @@ export default function ChatRequestsNotifier({ userId }) {
   };
 
   const handleDecline = async (req, e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
+    if (e) { e.preventDefault(); e.stopPropagation(); }
     setRequests(prev => prev.filter(r => r.id !== req.id));
+    lastCountRef.current = Math.max(0, lastCountRef.current - 1);
     addToast('Request dismissed', 'info');
-
     try {
-      await supabase
-        .from('chat_requests')
-        .update({ status: 'declined' })
-        .eq('id', req.id);
-    } catch {
-      // background handle
-    }
+      await supabase.from('chat_requests').update({ status: 'declined' }).eq('id', req.id);
+    } catch { /* background */ }
   };
 
   if (!requests.length) return null;
 
   return (
     <>
-      <div
-        className="chat-request-toast-container"
-        style={{
-          position: 'fixed',
-          zIndex: 9998,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '10px',
-          pointerEvents: 'none',
-        }}
-      >
-        {requests.map(req => (
-          <div
-            key={req.id}
-            className="animate-slide-in-right"
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--accent-border)',
-              borderRadius: '16px',
-              padding: '16px',
-              boxShadow: '0 12px 40px rgba(0,0,0,0.75), 0 0 0 1px var(--accent-border)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
-              pointerEvents: 'all',
-              position: 'relative',
-              boxSizing: 'border-box',
-            }}
+      {/* Notification panel — CSS class controls all positioning */}
+      <div className="notif-panel">
+        {/* Sound mute toggle — top of the panel */}
+        <div className="notif-sound-row">
+          <button
+            onClick={toggleMute}
+            title={isMuted ? 'Unmute notification sounds' : 'Mute notification sounds'}
+            className="notif-sound-btn"
           >
-            {/* Top Close X button */}
+            {isMuted ? <BellOff size={13} /> : <Bell size={13} />}
+            {isMuted ? 'Sound off' : 'Sound on'}
+          </button>
+        </div>
+
+        {requests.map(req => (
+          <div key={req.id} className="notif-card animate-slide-in-right">
+            {/* Dismiss X */}
             <button
               onClick={(e) => handleDecline(req, e)}
-              style={{
-                position: 'absolute', top: '10px', right: '10px',
-                width: '32px', height: '32px', borderRadius: '8px',
-                background: 'var(--surface-2)', border: '1px solid var(--border)',
-                color: 'var(--text-muted)', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'all 0.15s', zIndex: 5,
-              }}
-              title="Close notification"
+              className="notif-close-btn"
+              title="Dismiss"
             >
-              <X size={16} />
+              <X size={15} />
             </button>
 
             {/* Icon + text */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', paddingRight: '28px' }}>
-              <div style={{ position: 'relative', flexShrink: 0 }}>
-                <div style={{
-                  width: 42, height: 42, borderRadius: '11px',
-                  background: 'var(--accent-dim)', border: '1px solid var(--accent-border)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <MessageSquare size={19} color="var(--accent)" />
+            <div className="notif-header">
+              <div className="notif-icon-wrap">
+                <div className="notif-icon">
+                  <MessageSquare size={18} color="var(--accent)" />
                 </div>
-                {/* Pulse ring */}
-                <div style={{
-                  position: 'absolute', inset: '-5px', borderRadius: '16px',
-                  border: '2px solid var(--accent)',
-                  animation: 'req-ring 1.8s ease-in-out infinite',
-                  opacity: 0.5,
-                }} />
+                <div className="notif-pulse-ring" />
               </div>
 
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '3px' }}>
-                  <Bell size={11} color="var(--accent)" />
-                  <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                    Incoming Chat Request
-                  </span>
+              <div className="notif-body">
+                <div className="notif-label">
+                  <Bell size={10} color="var(--accent)" />
+                  <span>Incoming Chat Request</span>
                 </div>
-                <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', lineHeight: 1.2, marginBottom: '3px', wordBreak: 'break-word' }}>
-                  {req.sender_name || req.sender_id}
-                </p>
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                  wants a private 5-min encrypted chat
-                </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                <p className="notif-sender">{req.sender_name || req.sender_id}</p>
+                <p className="notif-subtext">wants a private 5-min encrypted chat</p>
+                <div className="notif-badge">
                   <Shield size={10} color="var(--accent)" />
-                  <span style={{ fontSize: '10px', color: 'var(--accent)', fontWeight: 600 }}>E2E Encrypted · Auto-deletes after 5 min</span>
+                  <span>E2E Encrypted · Auto-deletes after 5 min</span>
                 </div>
               </div>
             </div>
 
-            {/* Buttons */}
-            <div style={{ display: 'flex', gap: '8px' }}>
+            {/* Action buttons */}
+            <div className="notif-actions">
               <button
                 onClick={() => handleAccept(req)}
                 disabled={accepting === req.id}
-                style={{
-                  flex: 1, background: 'var(--accent)', color: '#fff', border: 'none',
-                  borderRadius: '10px', padding: '11px 14px', fontSize: '13px', fontWeight: 700,
-                  cursor: accepting === req.id ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
-                  opacity: accepting === req.id ? 0.7 : 1, transition: 'all 0.15s',
-                }}
+                className="notif-accept-btn"
               >
                 {accepting === req.id ? (
-                  <>
-                    <div style={{
-                      width: 13, height: 13, borderRadius: '50%',
-                      border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff',
-                      animation: 'spin 0.8s linear infinite'
-                    }} />
-                    Entering…
-                  </>
+                  <><div className="notif-spinner" /> Entering…</>
                 ) : (
-                  <><Check size={15} /> Accept & Enter Chat</>
+                  <><Check size={14} /> Accept & Enter Chat</>
                 )}
               </button>
-
               <button
                 onClick={(e) => handleDecline(req, e)}
                 disabled={!!accepting}
-                title="Decline request"
-                style={{
-                  background: 'var(--surface-2)', color: 'var(--text-muted)',
-                  border: '1px solid var(--border)', borderRadius: '10px',
-                  padding: '11px 14px', fontSize: '13px', cursor: accepting ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600,
-                  opacity: accepting ? 0.5 : 1, flexShrink: 0,
-                }}
+                className="notif-decline-btn"
               >
-                <X size={15} /> Decline
+                <X size={14} /> Decline
               </button>
             </div>
           </div>
@@ -293,21 +234,197 @@ export default function ChatRequestsNotifier({ userId }) {
       </div>
 
       <style>{`
-        .chat-request-toast-container {
-          bottom: 20px;
-          right: 20px;
+        /* ===== Notification Panel Layout ===== */
+        .notif-panel {
+          position: fixed;
+          z-index: 9999;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          pointer-events: none;
+          /* Desktop: bottom-right */
+          bottom: 24px;
+          right: 24px;
           width: 360px;
-          max-width: calc(100vw - 32px);
+          max-width: calc(100vw - 48px);
         }
-        @media (max-width: 640px) {
-          .chat-request-toast-container {
-            right: 50% !important;
-            transform: translateX(50%) !important;
-            bottom: 16px !important;
-            width: calc(100vw - 24px) !important;
-            max-width: 400px !important;
+
+        /* Mobile: bottom-center, full width */
+        @media (max-width: 600px) {
+          .notif-panel {
+            bottom: 16px;
+            right: auto;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100vw - 32px);
+            max-width: 420px;
           }
         }
+
+        /* ===== Card ===== */
+        .notif-card {
+          background: var(--surface);
+          border: 1px solid var(--accent-border);
+          border-radius: 16px;
+          padding: 14px 14px 12px;
+          box-shadow: 0 16px 48px rgba(0,0,0,0.75), 0 0 0 1px var(--accent-border);
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          pointer-events: all;
+          position: relative;
+          box-sizing: border-box;
+        }
+
+        /* ===== Sound toggle row ===== */
+        .notif-sound-row {
+          pointer-events: all;
+          display: flex;
+          justify-content: flex-end;
+        }
+        .notif-sound-btn {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 5px 12px;
+          font-size: 11px;
+          font-weight: 600;
+          color: var(--text-muted);
+          cursor: pointer;
+          pointer-events: all;
+          transition: all 0.15s;
+        }
+        .notif-sound-btn:hover { border-color: var(--accent-border); color: var(--accent); }
+
+        /* ===== Close button ===== */
+        .notif-close-btn {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          width: 28px;
+          height: 28px;
+          border-radius: 8px;
+          background: var(--surface-2);
+          border: 1px solid var(--border);
+          color: var(--text-muted);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 5;
+          transition: all 0.15s;
+        }
+        .notif-close-btn:hover { background: var(--surface-3); color: var(--danger); }
+
+        /* ===== Header row (icon + text) ===== */
+        .notif-header {
+          display: flex;
+          align-items: flex-start;
+          gap: 11px;
+          padding-right: 26px;
+        }
+        .notif-icon-wrap { position: relative; flex-shrink: 0; }
+        .notif-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          background: var(--accent-dim);
+          border: 1px solid var(--accent-border);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .notif-pulse-ring {
+          position: absolute;
+          inset: -5px;
+          border-radius: 15px;
+          border: 2px solid var(--accent);
+          animation: req-ring 1.8s ease-in-out infinite;
+          opacity: 0.5;
+        }
+        .notif-body { flex: 1; min-width: 0; }
+        .notif-label {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          margin-bottom: 3px;
+        }
+        .notif-label span {
+          font-size: 10px;
+          font-weight: 800;
+          color: var(--accent);
+          text-transform: uppercase;
+          letter-spacing: 0.07em;
+        }
+        .notif-sender {
+          font-size: 15px;
+          font-weight: 700;
+          color: var(--text);
+          line-height: 1.2;
+          margin-bottom: 2px;
+          word-break: break-word;
+        }
+        .notif-subtext { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+        .notif-badge {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          margin-top: 5px;
+          flex-wrap: wrap;
+        }
+        .notif-badge span { font-size: 10px; color: var(--accent); font-weight: 600; }
+
+        /* ===== Action buttons ===== */
+        .notif-actions { display: flex; gap: 8px; }
+        .notif-accept-btn {
+          flex: 1;
+          background: var(--accent);
+          color: #fff;
+          border: none;
+          border-radius: 10px;
+          padding: 10px 12px;
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          transition: all 0.15s;
+        }
+        .notif-accept-btn:disabled { opacity: 0.65; cursor: not-allowed; }
+        .notif-decline-btn {
+          background: var(--surface-2);
+          color: var(--text-muted);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          padding: 10px 12px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          flex-shrink: 0;
+          transition: all 0.15s;
+        }
+        .notif-decline-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        /* ===== Spinner ===== */
+        .notif-spinner {
+          width: 13px;
+          height: 13px;
+          border-radius: 50%;
+          border: 2px solid rgba(255,255,255,0.3);
+          border-top-color: #fff;
+          animation: spin 0.8s linear infinite;
+          flex-shrink: 0;
+        }
+
+        /* ===== Keyframes ===== */
         @keyframes req-ring {
           0%, 100% { transform: scale(1); opacity: 0.5; }
           50%       { transform: scale(1.12); opacity: 0.15; }
