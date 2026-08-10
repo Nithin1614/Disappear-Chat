@@ -221,8 +221,8 @@ export default function ChatPage() {
 
   const headerTitle = partner ? (partner.display_name || partner.user_id) : (displayName || `Room ${roomCode}`);
   const headerSubtitle = partner
-    ? `Room: ${roomCode} · ID: ${partner.user_id}`
-    : `Room: ${roomCode} · ID: ${userId}`;
+    ? `Room ID: ${roomCode} · User ID: ${partner.user_id}`
+    : `Room ID: ${roomCode} · User ID: ${userId}`;
 
   const countdown = useCountdown(room?.expires_at, room?.duration_minutes);
 

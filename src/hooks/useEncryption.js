@@ -11,39 +11,35 @@ import {
 
 /**
  * Hook that manages AES-256-GCM encryption.
- * First checks URL hash fragment (#key=...).
- * If no hash key is present, derives key deterministically from roomCode.
- * This guarantees code-only joining works instantly with full E2E encryption intact!
+ * Primary key is ALWAYS derived deterministically from roomCode so all room participants
+ * share the exact same key regardless of URL hash presence.
+ * URL hash key (#key=...) is preserved as a fallback for backward compatibility.
  */
 export function useEncryption(roomCode = null) {
   const [keyLoaded, setKeyLoaded] = useState(false);
   const [error, setError] = useState(null);
-  const cryptoKeyRef = useRef(null);
+  const primaryKeyRef = useRef(null);
+  const fallbackKeyRef = useRef(null);
 
   useEffect(() => {
+    if (!roomCode) return;
     let cancelled = false;
 
     async function loadKey() {
       try {
+        // Primary key: derived deterministically from roomCode (shared by all participants)
+        const primary = await deriveKeyFromRoomCode(roomCode);
+
+        // Fallback key: URL hash key (#key=...) if present
+        let fallback = null;
         const base64Key = getKeyFromHash();
-        let key = null;
-
         if (base64Key) {
-          key = await importKeyFromBase64(base64Key);
-        } else if (roomCode) {
-          key = await deriveKeyFromRoomCode(roomCode);
-        }
-
-        if (!key) {
-          if (!cancelled) {
-            setError('No encryption key found');
-            setKeyLoaded(false);
-          }
-          return;
+          try { fallback = await importKeyFromBase64(base64Key); } catch {}
         }
 
         if (!cancelled) {
-          cryptoKeyRef.current = key;
+          primaryKeyRef.current = primary;
+          fallbackKeyRef.current = fallback;
           setKeyLoaded(true);
           setError(null);
         }
@@ -67,32 +63,66 @@ export function useEncryption(roomCode = null) {
   }, [roomCode]);
 
   const encrypt = useCallback(async (plaintext) => {
-    if (!cryptoKeyRef.current) {
-      throw new Error('Encryption key not loaded');
-    }
-    return cryptoEncrypt(plaintext, cryptoKeyRef.current);
+    const key = primaryKeyRef.current || fallbackKeyRef.current;
+    if (!key) throw new Error('Encryption key not loaded');
+    return cryptoEncrypt(plaintext, key);
   }, []);
 
   const decrypt = useCallback(async (ciphertext, iv) => {
-    if (!cryptoKeyRef.current) {
-      throw new Error('Encryption key not loaded');
+    const primary = primaryKeyRef.current;
+    const fallback = fallbackKeyRef.current;
+    if (!primary && !fallback) throw new Error('Encryption key not loaded');
+
+    // 1. Try primary room code key first
+    if (primary) {
+      try {
+        return await cryptoDecrypt(ciphertext, iv, primary);
+      } catch (err) {
+        if (!fallback) throw err;
+      }
     }
-    return cryptoDecrypt(ciphertext, iv, cryptoKeyRef.current);
+
+    // 2. Try fallback hash key
+    if (fallback) {
+      return await cryptoDecrypt(ciphertext, iv, fallback);
+    }
+
+    throw new Error('Decryption failed');
   }, []);
 
   const encryptFile = useCallback(async (arrayBuffer) => {
-    if (!cryptoKeyRef.current) {
-      throw new Error('Encryption key not loaded');
-    }
-    return cryptoEncryptFile(arrayBuffer, cryptoKeyRef.current);
+    const key = primaryKeyRef.current || fallbackKeyRef.current;
+    if (!key) throw new Error('Encryption key not loaded');
+    return cryptoEncryptFile(arrayBuffer, key);
   }, []);
 
   const decryptFile = useCallback(async (encryptedArrayBuffer, iv) => {
-    if (!cryptoKeyRef.current) {
-      throw new Error('Encryption key not loaded');
+    const primary = primaryKeyRef.current;
+    const fallback = fallbackKeyRef.current;
+    if (!primary && !fallback) throw new Error('Encryption key not loaded');
+
+    if (primary) {
+      try {
+        return await cryptoDecryptFile(encryptedArrayBuffer, iv, primary);
+      } catch (err) {
+        if (!fallback) throw err;
+      }
     }
-    return cryptoDecryptFile(encryptedArrayBuffer, iv, cryptoKeyRef.current);
+
+    if (fallback) {
+      return await cryptoDecryptFile(encryptedArrayBuffer, iv, fallback);
+    }
+
+    throw new Error('File decryption failed');
   }, []);
 
-  return { encrypt, decrypt, encryptFile, decryptFile, keyLoaded, cryptoKey: cryptoKeyRef.current, error };
+  return {
+    encrypt,
+    decrypt,
+    encryptFile,
+    decryptFile,
+    keyLoaded,
+    cryptoKey: primaryKeyRef.current || fallbackKeyRef.current,
+    error
+  };
 }
