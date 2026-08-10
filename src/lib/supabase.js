@@ -1,23 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const defaultUrl = 'https://bcrdgwapnggldircyjoi.supabase.co';
+const defaultAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjcmRnd2FwbmdnbGRpcmN5am9pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMzg1MzMsImV4cCI6MjEwMTkxNDUzM30.evmMRhy9Vutv3eKWOCKKlxuIId4bQmvOnEIkh6JLqIQ';
 
-if (!supabaseUrl || supabaseUrl === 'your_supabase_url_here') {
-  console.warn(
-    'Supabase URL not configured. Set VITE_SUPABASE_URL in your .env file.'
-  );
-}
-
-if (!supabaseAnonKey || supabaseAnonKey === 'your_supabase_anon_key_here') {
-  console.warn(
-    'Supabase anon key not configured. Set VITE_SUPABASE_ANON_KEY in your .env file.'
-  );
-}
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || defaultUrl;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || defaultAnonKey;
 
 export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key',
+  supabaseUrl,
+  supabaseAnonKey,
   {
     realtime: {
       params: {
