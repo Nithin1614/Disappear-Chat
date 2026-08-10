@@ -100,6 +100,7 @@ export function useRealtimeMessages(roomId) {
       fileSize = null,
       fileIv = null,
       burnAfterRead = false,
+      keyEpoch = null,
     }) => {
       const { data, error: insertError } = await supabase
         .from('messages')
@@ -115,6 +116,7 @@ export function useRealtimeMessages(roomId) {
           file_iv: fileIv || iv,
           burn_after_read: burnAfterRead,
           is_read: false,
+          key_epoch: keyEpoch, // Forward secrecy: which session key epoch encrypted this message
         })
         .select()
         .single();

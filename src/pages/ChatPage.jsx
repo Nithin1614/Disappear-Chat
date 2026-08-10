@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Shield, Share2, AlertTriangle, ArrowLeft, Lock, Bell, BellOff } from 'lucide-react';
+import { Shield, Share2, AlertTriangle, ArrowLeft, Lock, Bell, BellOff, Fingerprint, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useUser } from '../context/UserContext';
 import { useToast } from '../context/ToastContext';
@@ -11,6 +11,11 @@ import { useCountdown } from '../hooks/useCountdown';
 import { useNotificationSound } from '../hooks/useNotificationSound';
 import { useFileUpload } from '../hooks/useFileUpload';
 import { useThanosSnap } from '../hooks/useThanosSnap';
+import { useForwardSecrecy } from '../hooks/useForwardSecrecy';
+import { useDeadManSwitch } from '../hooks/useDeadManSwitch';
+import { useClipboardAutoClear } from '../hooks/useClipboardAutoClear';
+import { useAccessLock } from '../hooks/useAccessLock';
+import { useMultiTabProtection } from '../hooks/useMultiTabProtection';
 import { SUPPORTED_IMAGE_TYPES, TIMER_WARNING_SECONDS, MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB } from '../lib/constants';
 import Header from '../components/ui/Header';
 import MessageBubble from '../components/chat/MessageBubble';
@@ -25,6 +30,8 @@ import QRCodeModal from '../components/room/QRCodeModal';
 import ThanosSnap from '../components/effects/ThanosSnap';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import ScreenshotGuard from '../components/ui/ScreenshotGuard';
+import AccessLockOverlay from '../components/ui/AccessLockOverlay';
+import MultiTabBlockScreen from '../components/ui/MultiTabBlockScreen';
 
 export default function ChatPage() {
   const { roomCode } = useParams();
@@ -47,19 +54,101 @@ export default function ChatPage() {
   const [warningShown, setWarningShown] = useState(false);
   const [showGraceBanner, setShowGraceBanner] = useState(false);
   const [partnerLeftToast, setPartnerLeftToast] = useState(false);
+  // Security feature state
+  const [fingerprintWarning, setFingerprintWarning] = useState(null); // { userId, displayName }
+  const [dmsCountdown, setDmsCountdown] = useState(0); // Dead Man Switch final countdown
 
   const chatContainerRef = useRef(null);
   const messagesEndRef = useRef(null);
   const prevMessageCountRef = useRef(0);
   const prevMemberCountRef = useRef(0);
 
-  // --- Hooks ---
+  // --- Core Hooks ---
   const { encrypt, decrypt, encryptFile: encryptFileHook, keyLoaded, cryptoKey, error: keyError } = useEncryption(roomCode);
   const { messages, sendMessage, loading: messagesLoading } = useRealtimeMessages(room?.id);
-  const { onlineMembers, typingUsers, trackTyping } = usePresence(room?.id, userId, displayName);
   const { playSound, isTabFocused, isMuted, toggleMute } = useNotificationSound();
   const { downloadFile, getDecryptedUrl } = useFileUpload(room?.id);
   const { triggerSnap } = useThanosSnap();
+
+  // --- Feature 1: Forward Secrecy ---
+  const {
+    sessionKey,
+    currentEpoch,
+    epochKeyCache,
+    isReady: fsReady,
+    onRotate,
+  } = useForwardSecrecy(room?.id, userId, cryptoKey);
+
+  // Toast on key rotation (not first init)
+  const isFirstRotationRef = useRef(true);
+  useEffect(() => {
+    onRotate(() => {
+      if (isFirstRotationRef.current) { isFirstRotationRef.current = false; return; }
+      addToast('🔄 Session key rotated — forward secrecy maintained', 'info');
+    });
+  }, [onRotate, addToast]);
+
+  // Effective encrypt/decrypt: use session key when available, fallback to base key
+  const effectiveEncrypt = useCallback(async (plaintext) => {
+    if (sessionKey) {
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const enc = new TextEncoder();
+      const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, sessionKey, enc.encode(plaintext));
+      const toB64 = (buf) => { const b = new Uint8Array(buf); let s = ''; for (let i = 0; i < b.byteLength; i++) s += String.fromCharCode(b[i]); return btoa(s); };
+      return { ciphertext: toB64(encrypted), iv: toB64(iv.buffer), epoch: currentEpoch };
+    }
+    return encrypt(plaintext);
+  }, [sessionKey, currentEpoch, encrypt]);
+
+  const effectiveDecrypt = useCallback(async (ciphertext, iv, epoch) => {
+    if (epoch && epochKeyCache.has(epoch)) {
+      const key = epochKeyCache.get(epoch);
+      const fromB64 = (b64) => { const binary = atob(b64); const bytes = new Uint8Array(binary.length); for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i); return bytes.buffer; };
+      const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(fromB64(iv)) }, key, fromB64(ciphertext));
+      return new TextDecoder().decode(decrypted);
+    }
+    return decrypt(ciphertext, iv);
+  }, [epochKeyCache, decrypt]);
+
+  // --- Feature 2 & 3: Presence with typing encryption + fingerprint detection ---
+  const handleFingerprintChange = useCallback(({ userId: peerId, displayName: peerName }) => {
+    setFingerprintWarning({ userId: peerId, displayName: peerName });
+    addToast(`⚠️ ${peerName} appears to be on a different device`, 'warning');
+  }, [addToast]);
+
+  const { onlineMembers, typingUsers, trackTyping } = usePresence(
+    room?.id, userId, displayName,
+    sessionKey || cryptoKey, // use session key if available
+    handleFingerprintChange
+  );
+
+  // --- Feature 4: Dead Man Switch ---
+  const { resetActivity: resetDmsActivity } = useDeadManSwitch({
+    roomId: room?.id,
+    userId,
+    enabled: !!room?.id && keyLoaded,
+    onWarn: useCallback(() => {
+      addToast('⚠️ No activity detected — room closes in 30 seconds. Send a message to keep it alive.', 'warning');
+    }, [addToast]),
+    onCountdown: useCallback((secs) => {
+      setDmsCountdown(secs);
+    }, []),
+    onDestroy: useCallback(() => {
+      addToast('💀 Room auto-destroyed due to inactivity.', 'error');
+      setTimeout(() => { window.location.href = '/dashboard'; }, 1500);
+    }, [addToast]),
+  });
+
+  // --- Feature 5: Clipboard Auto-Clear ---
+  useClipboardAutoClear(useCallback(() => {
+    addToast('📋 Clipboard cleared for security', 'info');
+  }, [addToast]));
+
+  // --- Feature 6: Access Lock ---
+  const { isLocked, unlock } = useAccessLock();
+
+  // --- Feature 7: Multi-Tab Protection ---
+  const { isBlocked } = useMultiTabProtection(roomCode, userId);
 
   // Member lookup map (User ID -> Display Name)
   const memberMap = useMemo(() => {
@@ -127,7 +216,7 @@ export default function ChatPage() {
     prevMemberCountRef.current = count;
   }, [onlineMembers, room]);
 
-  // Decrypt text messages
+  // Decrypt text messages — try session epoch key first, fallback to base key
   useEffect(() => {
     if (!keyLoaded || !messages.length) return;
     (async () => {
@@ -135,12 +224,14 @@ export default function ChatPage() {
       for (const msg of messages) {
         if (updated[msg.id]) continue;
         try {
-          if (msg.encrypted_content && msg.iv) updated[msg.id] = await decrypt(msg.encrypted_content, msg.iv);
+          if (msg.encrypted_content && msg.iv) {
+            updated[msg.id] = await effectiveDecrypt(msg.encrypted_content, msg.iv, msg.key_epoch || null);
+          }
         } catch { updated[msg.id] = '[Decryption failed]'; }
       }
       setDecryptedMessages(updated);
     })();
-  }, [messages, keyLoaded, decrypt]);
+  }, [messages, keyLoaded, effectiveDecrypt]);
 
   // Decrypt inline images
   useEffect(() => {
@@ -215,12 +306,14 @@ export default function ChatPage() {
     }
   }, [countdown.isExpired, countdown.timerStarted, countdown.inGracePeriod, snapTriggered, triggerSnap]);
 
-  // Send text message (with optional burn after read)
+  // Send text message — use forward secrecy session key when available
   const handleSendMessage = useCallback(async (text, burnAfterRead = false) => {
     if (!keyLoaded || !room?.id) return;
-    const { ciphertext, iv } = await encrypt(text);
-    await sendMessage({ encryptedContent: ciphertext, iv, type: 'text', senderId: userId, burnAfterRead });
-  }, [keyLoaded, room?.id, encrypt, sendMessage, userId]);
+    resetDmsActivity(); // Reset dead man switch on message send
+    const result = await effectiveEncrypt(text);
+    const { ciphertext, iv, epoch } = result;
+    await sendMessage({ encryptedContent: ciphertext, iv, type: 'text', senderId: userId, burnAfterRead, keyEpoch: epoch || null });
+  }, [keyLoaded, room?.id, effectiveEncrypt, sendMessage, userId, resetDmsActivity]);
 
   // Send file (with optional burn after read)
   const handleSendFile = useCallback(async (file, burnAfterRead = false) => {
@@ -261,9 +354,15 @@ export default function ChatPage() {
   const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
   const handleDragLeave = (e) => { e.preventDefault(); if (!e.currentTarget.contains(e.relatedTarget)) setIsDragging(false); };
   const handleDrop = (e) => { e.preventDefault(); setIsDragging(false); const f = e.dataTransfer.files?.[0]; if (f) handleSendFile(f); };
-  const handleTyping = useCallback(() => trackTyping(true), [trackTyping]);
+  const handleTyping = useCallback(() => { trackTyping(true); resetDmsActivity(); }, [trackTyping, resetDmsActivity]);
+
+  // Scroll in messages resets dead man switch
+  const handleMessagesScroll = useCallback(() => resetDmsActivity(), [resetDmsActivity]);
 
   const roomUrl = `${window.location.origin}/room/${roomCode}${window.location.hash}`;
+
+  // Feature 7: Multi-tab block — show before anything else
+  if (isBlocked) return <MultiTabBlockScreen roomCode={roomCode} />;
 
   if (roomLoading) return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -405,6 +504,43 @@ export default function ChatPage() {
           />
         )}
 
+        {/* Feature 3: Device Fingerprint Warning Banner */}
+        {fingerprintWarning && (
+          <div style={{
+            background: 'rgba(245,158,11,0.1)', borderBottom: '1px solid rgba(245,158,11,0.35)',
+            padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', zIndex: 24,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Fingerprint size={14} color="#f59e0b" />
+              <span style={{ fontSize: '12px', fontWeight: 600, color: '#f59e0b' }}>
+                ⚠️ {fingerprintWarning.displayName} appears to be on a different device than when they joined.
+              </span>
+            </div>
+            <button onClick={() => setFingerprintWarning(null)} style={{ background: 'none', border: 'none', color: '#f59e0b', cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}>×</button>
+          </div>
+        )}
+
+        {/* Feature 4: Dead Man Switch Final Countdown Banner */}
+        {dmsCountdown > 0 && (
+          <div style={{
+            background: 'rgba(239,68,68,0.18)', borderBottom: '1px solid rgba(239,68,68,0.5)',
+            padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', zIndex: 24,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Clock size={14} color="var(--danger)" />
+              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--danger)' }}>
+                💤 Inactivity — room auto-destroys in {dmsCountdown}s. Type anything to cancel.
+              </span>
+            </div>
+            <button
+              onClick={() => { resetDmsActivity(); }}
+              style={{ background: 'var(--danger)', color: '#fff', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+            >
+              Keep Alive
+            </button>
+          </div>
+        )}
+
         {/* Grace Period Banner */}
         {showGraceBanner && countdown.inGracePeriod && (
           <div style={{
@@ -457,38 +593,47 @@ export default function ChatPage() {
         {/* Drag-drop zone */}
         <DragDropZone isDragging={isDragging} />
 
-        {/* Messages */}
-        <div className="chat-messages-area" style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingTop: '16px', paddingBottom: '8px' }}>
-          {messagesLoading ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
-              <LoadingSpinner text="Loading messages…" />
-            </div>
-          ) : messages.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '220px', gap: '12px', textAlign: 'center', padding: '24px' }}>
-              <div style={{ width: 48, height: 48, borderRadius: '12px', background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Shield size={22} color="var(--text-dim)" />
+        {/* Messages area — wrapped to allow lock overlay positioning */}
+        <div style={{ flex: 1, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
+          <div
+            className="chat-messages-area"
+            onScroll={handleMessagesScroll}
+            style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingTop: '16px', paddingBottom: '8px' }}
+          >
+            {messagesLoading ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
+                <LoadingSpinner text="Loading messages…" />
               </div>
-              <div>
-                <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', marginBottom: '4px' }}>Encrypted Room Ready</p>
-                <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Send the first message to start the room countdown timer.</p>
+            ) : messages.length === 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '220px', gap: '12px', textAlign: 'center', padding: '24px' }}>
+                <div style={{ width: 48, height: 48, borderRadius: '12px', background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Shield size={22} color="var(--text-dim)" />
+                </div>
+                <div>
+                  <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', marginBottom: '4px' }}>Encrypted Room Ready</p>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Send the first message to start the room countdown timer.</p>
+                </div>
               </div>
-            </div>
-          ) : (
-            messages.map(msg => (
-              <MessageBubble
-                key={msg.id}
-                message={msg}
-                isSender={msg.sender_id === userId}
-                senderName={memberMap[msg.sender_id] || msg.sender_id}
-                decryptedContent={decryptedMessages[msg.id]}
-                decryptedImageUrl={decryptedImages[msg.id]}
-                onDownloadFile={handleDownloadFile}
-              />
-            ))
-          )}
+            ) : (
+              messages.map(msg => (
+                <MessageBubble
+                  key={msg.id}
+                  message={msg}
+                  isSender={msg.sender_id === userId}
+                  senderName={memberMap[msg.sender_id] || msg.sender_id}
+                  decryptedContent={decryptedMessages[msg.id]}
+                  decryptedImageUrl={decryptedImages[msg.id]}
+                  onDownloadFile={handleDownloadFile}
+                />
+              ))
+            )}
 
-          <TypingIndicator typingUsers={typingUsers} />
-          <div ref={messagesEndRef} style={{ height: '8px' }} />
+            <TypingIndicator typingUsers={typingUsers} />
+            <div ref={messagesEndRef} style={{ height: '8px' }} />
+          </div>
+
+          {/* Feature 6: Access Lock Overlay */}
+          {isLocked && <AccessLockOverlay onUnlock={unlock} />}
         </div>
 
         {/* Input */}
