@@ -149,7 +149,7 @@ export default function LandingPage() {
             </div>
             <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginTop: '4px' }}>24h Automatic Clean</h3>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-              Temporary identities & room traces are wiped every 24 hours. Complete privacy & safety.
+              All data is deleted immediately as soon as a room is closed or expires. Temporary identities auto-wipe every 24 hours.
             </p>
           </div>
 
