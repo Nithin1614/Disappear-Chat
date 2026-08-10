@@ -6,6 +6,7 @@ import Header from '../components/ui/Header';
 import CreateRoom from '../components/room/CreateRoom';
 import JoinRoom from '../components/room/JoinRoom';
 import UserSearch from '../components/auth/UserSearch';
+import ChatRequestsNotifier from '../components/auth/ChatRequestsNotifier';
 
 const Section = ({ title, icon: Icon, children }) => (
   <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
@@ -42,23 +43,24 @@ export default function Dashboard() {
 
       <main style={{ maxWidth: '960px', margin: '0 auto', padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
+        {/* Real-time Incoming Chat Requests Notifier */}
+        <ChatRequestsNotifier userId={userId} />
+
         {/* User Card */}
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ width: 48, height: 48, borderRadius: '12px', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <User size={22} color="#fff" />
+            <User size={22} color="#08090d" />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '22px', fontWeight: 700, color: 'var(--text)', letterSpacing: '0.05em' }}>{userId}</span>
+              <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)' }}>{displayName || userId}</span>
               <button onClick={copyUserId} title="Copy ID" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0 }}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--text-muted)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}>
                 <Copy size={15} />
               </button>
             </div>
-            {displayName
-              ? <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>{displayName}</p>
-              : <p style={{ fontSize: '13px', color: 'var(--text-dim)', marginTop: '2px' }}>No display name set</p>}
+            <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>ID: {userId}</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)' }} />
@@ -77,10 +79,10 @@ export default function Dashboard() {
         </div>
 
         {/* Find users */}
-        <Section title="Find Users" icon={Search}>
-          <div style={{ maxWidth: '420px' }}>
+        <Section title="Find Users & Direct Chat" icon={Search}>
+          <div style={{ maxWidth: '440px' }}>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>
-              Search by user ID to find someone's account.
+              Search by User ID to send an instant encrypted direct chat request.
             </p>
             <UserSearch />
           </div>

@@ -3,7 +3,7 @@
 
 @import "tailwindcss";
 
-/* ===== Design Tokens — Modern Dark (default) ===== */
+/* ===== Design Tokens — Modern Dark (Amber Gold Accent) ===== */
 :root {
   --bg: #08090d;
   --surface: #11131c;
@@ -16,15 +16,15 @@
   --text-muted: #94a3b8;
   --text-dim: #64748b;
 
-  --accent: #3b82f6;
-  --accent-hover: #2563eb;
-  --accent-dim: rgba(59, 130, 246, 0.16);
-  --accent-border: rgba(59, 130, 246, 0.4);
+  --accent: #f59e0b;
+  --accent-hover: #d97706;
+  --accent-dim: rgba(245, 158, 11, 0.16);
+  --accent-border: rgba(245, 158, 11, 0.4);
 
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --info: #3b82f6;
+  --info: #f59e0b;
 
   --radius-sm: 8px;
   --radius: 12px;
@@ -32,7 +32,7 @@
   --radius-xl: 20px;
 }
 
-/* ===== Design Tokens — Light ===== */
+/* ===== Design Tokens — Light (Amber Gold Accent) ===== */
 [data-theme="light"] {
   --bg: #f8fafc;
   --surface: #ffffff;
@@ -45,15 +45,15 @@
   --text-muted: #475569;
   --text-dim: #64748b;
 
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
-  --accent-dim: rgba(37, 99, 235, 0.12);
-  --accent-border: rgba(37, 99, 235, 0.35);
+  --accent: #d97706;
+  --accent-hover: #b45309;
+  --accent-dim: rgba(217, 119, 6, 0.12);
+  --accent-border: rgba(217, 119, 6, 0.35);
 
   --success: #16a34a;
   --warning: #d97706;
   --danger: #dc2626;
-  --info: #2563eb;
+  --info: #d97706;
 }
 
 /* ===== Reset ===== */
@@ -84,7 +84,7 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 /* ===== Selection ===== */
-::selection { background: rgba(59, 130, 246, 0.3); }
+::selection { background: rgba(245, 158, 11, 0.3); }
 
 /* ===== Focus ===== */
 input:focus, textarea:focus, button:focus-visible {
@@ -157,12 +157,12 @@ input[type="range"]::-webkit-slider-thumb {
 
 .btn-primary {
   background: var(--accent);
-  color: #fff;
+  color: #08090d;
   border: none;
   border-radius: var(--radius-sm);
   padding: 12px 20px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: background 0.15s ease, transform 0.1s ease;
   display: inline-flex;
@@ -171,7 +171,7 @@ input[type="range"]::-webkit-slider-thumb {
   gap: 8px;
   width: 100%;
 }
-.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+.btn-primary:hover:not(:disabled) { background: var(--accent-hover); color: #ffffff; }
 .btn-primary:active:not(:disabled) { transform: scale(0.98); }
 .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 

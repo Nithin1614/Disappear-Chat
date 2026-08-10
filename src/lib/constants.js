@@ -7,7 +7,7 @@ export const ROOM_CODE_LENGTH = 6;
 export const MIN_DURATION_MINUTES = 1;
 export const MAX_DURATION_MINUTES = 1440;
 
-export const MAX_FILE_SIZE_MB = 10;
+export const MAX_FILE_SIZE_MB = 12;
 export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 export const MAX_PRIVATE_MEMBERS = 2;

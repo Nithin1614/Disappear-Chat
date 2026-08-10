@@ -1,13 +1,23 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
 
 const UserContext = createContext(null);
 
 const USER_ID_KEY = 'vanishchat-user-id';
 const DISPLAY_NAME_KEY = 'vanishchat-display-name';
+const USER_CREATED_AT_KEY = 'vanishchat-user-created-at';
+const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
 export function UserProvider({ children }) {
   const [userId, setUserId] = useState(() => {
     try {
+      const createdAt = localStorage.getItem(USER_CREATED_AT_KEY);
+      if (createdAt && (Date.now() - parseInt(createdAt, 10) > TWENTY_FOUR_HOURS_MS)) {
+        localStorage.removeItem(USER_ID_KEY);
+        localStorage.removeItem(DISPLAY_NAME_KEY);
+        localStorage.removeItem(USER_CREATED_AT_KEY);
+        return null;
+      }
       return localStorage.getItem(USER_ID_KEY) || null;
     } catch {
       return null;
@@ -22,11 +32,18 @@ export function UserProvider({ children }) {
     }
   });
 
+  // Call Supabase DB cleanup function for 24h expired users
+  useEffect(() => {
+    supabase.rpc('cleanup_expired_users').catch(() => {});
+  }, []);
+
   const setUser = useCallback((newUserId, newDisplayName = '') => {
     setUserId(newUserId);
     setDisplayName(newDisplayName);
+    const nowTs = Date.now().toString();
     try {
       localStorage.setItem(USER_ID_KEY, newUserId);
+      localStorage.setItem(USER_CREATED_AT_KEY, nowTs);
       if (newDisplayName) {
         localStorage.setItem(DISPLAY_NAME_KEY, newDisplayName);
       }
@@ -41,6 +58,7 @@ export function UserProvider({ children }) {
     try {
       localStorage.removeItem(USER_ID_KEY);
       localStorage.removeItem(DISPLAY_NAME_KEY);
+      localStorage.removeItem(USER_CREATED_AT_KEY);
     } catch {
       // localStorage unavailable
     }

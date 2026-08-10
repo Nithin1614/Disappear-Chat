@@ -262,13 +262,13 @@ export default function ChatPage() {
   }
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' }}>
       <Header />
 
       {/* Main chat layout */}
       <div
         ref={chatContainerRef}
-        style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', width: '100%', margin: '0 auto', position: 'relative', overflow: 'hidden' }}
+        style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', maxWidth: '900px', width: '100%', margin: '0 auto', position: 'relative', overflow: 'hidden' }}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -354,7 +354,7 @@ export default function ChatPage() {
         <DragDropZone isDragging={isDragging} />
 
         {/* Messages */}
-        <div style={{ flex: 1, overflowY: 'auto', paddingTop: '16px', paddingBottom: '8px' }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingTop: '16px', paddingBottom: '8px' }}>
           {messagesLoading ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
               <LoadingSpinner text="Loading messages…" />
@@ -408,8 +408,8 @@ export default function ChatPage() {
         />
       )}
 
-      {/* Thanos snap — redirects to Home page (/) upon completion */}
-      <ThanosSnap isExpired={snapTriggered} onRedirect={() => window.location.href = '/'} />
+      {/* Thanos snap — redirects to Dashboard page (/dashboard) upon completion */}
+      <ThanosSnap isExpired={snapTriggered} onRedirect={() => window.location.href = '/dashboard'} />
     </div>
   );
 }
