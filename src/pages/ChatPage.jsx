@@ -80,13 +80,16 @@ export default function ChatPage() {
   } = useForwardSecrecy(room?.id, userId, cryptoKey);
 
   // Toast on key rotation (not first init)
+  // Use ref so the onRotate callback registration is stable and doesn't re-fire on addToast identity change
   const isFirstRotationRef = useRef(true);
+  const addToastRef = useRef(addToast);
+  useEffect(() => { addToastRef.current = addToast; }, [addToast]);
   useEffect(() => {
     onRotate(() => {
       if (isFirstRotationRef.current) { isFirstRotationRef.current = false; return; }
-      addToast('🔄 Session key rotated — forward secrecy maintained', 'info');
+      addToastRef.current('🔄 Session key rotated — forward secrecy maintained', 'info');
     });
-  }, [onRotate, addToast]);
+  }, [onRotate]); // stable — no addToast dep needed
 
   // Effective encrypt/decrypt: use session key when available, fallback to base key
   const effectiveEncrypt = useCallback(async (plaintext) => {

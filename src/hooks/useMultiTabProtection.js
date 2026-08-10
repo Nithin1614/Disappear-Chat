@@ -5,39 +5,35 @@ import { useState, useEffect, useRef } from 'react';
  * in multiple browser tabs simultaneously.
  *
  * Strategy:
- *   - Uses BroadcastChannel API (fast, native, no server) keyed to `vanishchat:{roomCode}:{userId}`
- *   - On mount: broadcasts a "claim" ping and listens for conflicts
- *   - If a reply "claimed" arrives within 300ms, the current tab is blocked
- *   - On unmount (tab close): broadcasts "release"
- *   - Safari fallback: localStorage heartbeat with 1-second TTL
+ *   - Uses BroadcastChannel API (Chrome/Firefox/Edge)
+ *   - On mount: sends a "claim" ping; if a "claimed" reply arrives, blocks this tab
+ *   - On unmount: sends "release" so the other tab can unblock
+ *   - Safari fallback: localStorage heartbeat (800ms interval, 2s TTL)
  *
- * @param {string} roomCode - The room code
- * @param {string} userId - The current user ID
- * @returns {{ isBlocked: boolean }}
+ * Bug fixes vs v1:
+ *   - Blocked localStorage path now still registers its own cleanup
+ *   - storageKey computed inside useEffect to avoid stale closure
  */
 export function useMultiTabProtection(roomCode, userId) {
   const [isBlocked, setIsBlocked] = useState(false);
-  const channelRef = useRef(null);
   const tabIdRef = useRef(`tab_${Date.now()}_${Math.random().toString(36).slice(2)}`);
-  const storageKey = `vanishchat_tab:${roomCode}:${userId}`;
 
   useEffect(() => {
     if (!roomCode || !userId) return;
 
     const myTabId = tabIdRef.current;
+    const storageKey = `vanishchat_tab:${roomCode}:${userId}`;
 
     // ---- BroadcastChannel path (Chrome, Firefox, Edge) ----
     if (typeof BroadcastChannel !== 'undefined') {
-      const channelName = `vanishchat:${roomCode}:${userId}`;
-      const bc = new BroadcastChannel(channelName);
-      channelRef.current = bc;
+      const bc = new BroadcastChannel(`vanishchat:${roomCode}:${userId}`);
 
       bc.onmessage = (event) => {
         const { type, fromTab } = event.data || {};
         if (fromTab === myTabId) return; // ignore own messages
 
         if (type === 'claim') {
-          // Another tab is claiming this channel — reply with "claimed" to block them
+          // Another tab is claiming — reply to block them
           bc.postMessage({ type: 'claimed', fromTab: myTabId });
         }
         if (type === 'claimed') {
@@ -45,46 +41,28 @@ export function useMultiTabProtection(roomCode, userId) {
           setIsBlocked(true);
         }
         if (type === 'release') {
-          // The other tab left — we can unblock
+          // Primary tab left — we're now free
           setIsBlocked(false);
         }
       };
 
-      // Broadcast our claim; wait briefly for a conflict reply
       bc.postMessage({ type: 'claim', fromTab: myTabId });
 
       return () => {
         bc.postMessage({ type: 'release', fromTab: myTabId });
         bc.close();
-        channelRef.current = null;
       };
     }
 
     // ---- localStorage fallback (Safari) ----
-    const heartbeatInterval = 800; // ms
-    const TTL = 2000; // ms — if no heartbeat within 2s, tab is considered gone
+    const HEARTBEAT_MS = 800;
+    const TTL_MS = 2000;
 
-    const existingEntry = localStorage.getItem(storageKey);
-    if (existingEntry) {
-      try {
-        const { timestamp, tabId } = JSON.parse(existingEntry);
-        if (tabId !== myTabId && Date.now() - timestamp < TTL) {
-          setIsBlocked(true);
-          return;
-        }
-      } catch { /* malformed, ignore */ }
-    }
-
-    // Register own heartbeat
     const writeHeartbeat = () => {
       localStorage.setItem(storageKey, JSON.stringify({ timestamp: Date.now(), tabId: myTabId }));
     };
-    writeHeartbeat();
-    const timer = setInterval(writeHeartbeat, heartbeatInterval);
 
-    return () => {
-      clearInterval(timer);
-      // Only remove if we own the entry
+    const cleanup = () => {
       try {
         const entry = localStorage.getItem(storageKey);
         if (entry) {
@@ -93,7 +71,29 @@ export function useMultiTabProtection(roomCode, userId) {
         }
       } catch { /* ignore */ }
     };
-  }, [roomCode, userId, storageKey]);
+
+    // Check if another tab already owns this session
+    try {
+      const existing = localStorage.getItem(storageKey);
+      if (existing) {
+        const { timestamp, tabId } = JSON.parse(existing);
+        if (tabId !== myTabId && Date.now() - timestamp < TTL_MS) {
+          setIsBlocked(true);
+          // Still register cleanup in case we later become unblocked
+          return cleanup;
+        }
+      }
+    } catch { /* malformed, ignore */ }
+
+    // Claim the session with a heartbeat
+    writeHeartbeat();
+    const timer = setInterval(writeHeartbeat, HEARTBEAT_MS);
+
+    return () => {
+      clearInterval(timer);
+      cleanup();
+    };
+  }, [roomCode, userId]);
 
   return { isBlocked };
 }

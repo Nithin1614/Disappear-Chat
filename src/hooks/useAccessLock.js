@@ -10,31 +10,30 @@ const INACTIVITY_LOCK_MS = 60 * 1000; // 60 seconds of inactivity
  * Only locks on genuine inactivity (no mouse/keyboard/touch/scroll for 60s).
  *
  * Returns `isLocked` boolean. Calling `unlock()` dismisses the overlay.
- * Activity events (mouse move, key press, click, touch, scroll) reset the timer.
  */
 export function useAccessLock() {
   const [isLocked, setIsLocked] = useState(false);
   const inactivityTimerRef = useRef(null);
+  const isLockedRef = useRef(false); // ref mirror to avoid stale closure in activity handler
 
   const resetInactivityTimer = useCallback(() => {
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
     inactivityTimerRef.current = setTimeout(() => {
       setIsLocked(true);
+      isLockedRef.current = true;
     }, INACTIVITY_LOCK_MS);
   }, []);
 
   const unlock = useCallback(() => {
     setIsLocked(false);
+    isLockedRef.current = false;
     resetInactivityTimer();
   }, [resetInactivityTimer]);
 
   useEffect(() => {
     const handleActivity = () => {
-      // Only reset timer when not locked — don't reset when user needs to click to unlock
-      setIsLocked(prev => {
-        if (!prev) resetInactivityTimer();
-        return prev;
-      });
+      // Don't reset timer when locked — user must explicitly click the overlay to unlock
+      if (!isLockedRef.current) resetInactivityTimer();
     };
 
     document.addEventListener('mousemove', handleActivity);

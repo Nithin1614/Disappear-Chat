@@ -6,15 +6,14 @@ const CLEAR_AFTER_MS = 10 * 1000; // 10 seconds
  * useClipboardAutoClear — automatically clears clipboard 10 seconds after a
  * sensitive message is copied, reducing risk of accidental data leakage.
  *
- * Usage:
- *   const { triggerClear } = useClipboardAutoClear(onCleared);
- *   // Call triggerClear() whenever a message is copied.
- *
  * @param {function} onCleared - Called after clipboard is cleared (for toast notification)
  */
 export function useClipboardAutoClear(onCleared) {
   const timerRef = useRef(null);
   const lastCopiedTextRef = useRef('');
+  // Store callback in ref so triggerClear stays stable and doesn't re-register the copy listener
+  const onClearedRef = useRef(onCleared);
+  useEffect(() => { onClearedRef.current = onCleared; }, [onCleared]);
 
   const triggerClear = useCallback((copiedText = '') => {
     lastCopiedTextRef.current = copiedText;
@@ -28,13 +27,13 @@ export function useClipboardAutoClear(onCleared) {
         const current = await navigator.clipboard.readText().catch(() => null);
         if (current === null || current === lastCopiedTextRef.current) {
           await navigator.clipboard.writeText('');
-          onCleared && onCleared();
+          onClearedRef.current && onClearedRef.current();
         }
       } catch {
-        // Clipboard access may be denied in some browsers — fail silently
+        // Clipboard access may be denied — fail silently
       }
     }, CLEAR_AFTER_MS);
-  }, [onCleared]);
+  }, []); // stable — no deps needed since we use refs
 
   // Global copy event listener — intercepts Ctrl+C on selected text in chat
   useEffect(() => {
@@ -48,7 +47,7 @@ export function useClipboardAutoClear(onCleared) {
       document.removeEventListener('copy', handleCopy);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [triggerClear]);
+  }, [triggerClear]); // triggerClear is now stable, so this runs only once
 
   return { triggerClear };
 }
