@@ -20,21 +20,38 @@ export default function QRCodeModal({ url, roomCode, onClose }) {
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.8)' }}
-      onClick={onClose}>
-      <div className="animate-scale-in" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '28px', width: '100%', maxWidth: '320px', position: 'relative' }}
-        onClick={e => e.stopPropagation()}>
-
-        <button onClick={onClose} style={{ position: 'absolute', top: '14px', right: '14px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex' }}><X size={16} /></button>
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.82)' }}
+      onClick={onClose}
+    >
+      <div
+        className="animate-scale-in"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '28px', width: '100%', maxWidth: '340px', position: 'relative' }}
+        onClick={e => e.stopPropagation()}
+      >
+        <button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); }}
+          style={{
+            position: 'absolute', top: '12px', right: '12px',
+            width: '36px', height: '36px', borderRadius: '10px',
+            background: 'var(--surface-2)', border: '1px solid var(--border)',
+            cursor: 'pointer', color: 'var(--text-muted)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.15s'
+          }}
+          title="Close"
+        >
+          <X size={18} />
+        </button>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', textAlign: 'center' }}>
           <div>
-            <p style={{ fontWeight: 600, fontSize: '16px', color: 'var(--text)', marginBottom: '4px' }}>Share Room</p>
+            <p style={{ fontWeight: 700, fontSize: '17px', color: 'var(--text)', marginBottom: '4px' }}>Share Room</p>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Scan the QR code or share the link</p>
           </div>
 
           {/* QR Code */}
-          <div style={{ background: '#fff', padding: '16px', borderRadius: '12px' }}>
+          <div style={{ background: '#fff', padding: '16px', borderRadius: '14px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
             <QRCodeSVG value={url} size={180} level="M" bgColor="#ffffff" fgColor="#000000" />
           </div>
 

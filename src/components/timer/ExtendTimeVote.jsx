@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Clock, X, Check, Vote } from 'lucide-react';
+import { Clock, X, Vote } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../context/ToastContext';
 
@@ -19,10 +19,8 @@ export default function ExtendTimeVote({ roomId, userId, memberCount, onClose })
     if (loading) return;
     setLoading(true);
     try {
-      // Clear any stale votes for this room first
       await supabase.from('extend_votes').delete().eq('room_id', roomId);
 
-      // Insert requester's initial vote
       const { error } = await supabase.from('extend_votes').insert({
         room_id: roomId,
         user_id: userId,
@@ -41,17 +39,37 @@ export default function ExtendTimeVote({ roomId, userId, memberCount, onClose })
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 85, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.75)' }}>
-      <div className="animate-scale-in" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '340px', position: 'relative' }}>
-        <button onClick={onClose} style={{ position: 'absolute', top: '14px', right: '14px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex' }}><X size={16} /></button>
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.82)' }}
+      onClick={onClose}
+    >
+      <div
+        className="animate-scale-in"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '28px', width: '100%', maxWidth: '360px', position: 'relative' }}
+        onClick={e => e.stopPropagation()}
+      >
+        <button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); }}
+          style={{
+            position: 'absolute', top: '12px', right: '12px',
+            width: '36px', height: '36px', borderRadius: '10px',
+            background: 'var(--surface-2)', border: '1px solid var(--border)',
+            cursor: 'pointer', color: 'var(--text-muted)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.15s'
+          }}
+          title="Close"
+        >
+          <X size={18} />
+        </button>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Clock size={20} color="var(--warning)" />
+            <div style={{ width: 42, height: 42, borderRadius: '12px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Clock size={20} color="var(--accent)" />
             </div>
             <div>
-              <p style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text)' }}>Extend Room Time</p>
+              <p style={{ fontWeight: 700, fontSize: '17px', color: 'var(--text)' }}>Extend Room Time</p>
               <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Choose time to add to countdown</p>
             </div>
           </div>

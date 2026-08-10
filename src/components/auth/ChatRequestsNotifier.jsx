@@ -16,6 +16,7 @@ export default function ChatRequestsNotifier({ userId }) {
   // Incoming requests listener (target_id = userId)
   useEffect(() => {
     if (!userId) return;
+    setAccepting(null);
 
     const fetchRequests = async () => {
       const { data } = await supabase
@@ -69,7 +70,6 @@ export default function ChatRequestsNotifier({ userId }) {
         if (payload.new && payload.new.status === 'accepted') {
           const roomCode = payload.new.room_code;
           addToast('Chat request accepted! Entering room with partner…', 'success');
-          // Short delay so toast shows before navigate
           setTimeout(() => {
             if (!window.location.pathname.includes(`/room/${roomCode}`)) {
               window.location.href = `/room/${roomCode}`;
@@ -123,8 +123,6 @@ export default function ChatRequestsNotifier({ userId }) {
         .eq('id', req.id);
 
       addToast('Accepted! Entering chat…', 'success');
-
-      // Recipient enters room immediately
       window.location.href = `/room/${req.room_code}`;
 
     } catch (err) {
@@ -133,16 +131,22 @@ export default function ChatRequestsNotifier({ userId }) {
     }
   };
 
-  const handleDecline = async (req) => {
+  const handleDecline = async (req, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    // Remove from UI immediately so it vanishes instantly!
+    setRequests(prev => prev.filter(r => r.id !== req.id));
+    addToast('Request dismissed', 'info');
+
     try {
       await supabase
         .from('chat_requests')
         .update({ status: 'declined' })
         .eq('id', req.id);
-      setRequests(prev => prev.filter(r => r.id !== req.id));
-      addToast('Request declined', 'info');
-    } catch (err) {
-      addToast(err.message || 'Failed to decline', 'error');
+    } catch {
+      // background update silently handled
     }
   };
 
@@ -175,10 +179,27 @@ export default function ChatRequestsNotifier({ userId }) {
               flexDirection: 'column',
               gap: '12px',
               pointerEvents: 'all',
+              position: 'relative',
             }}
           >
+            {/* Top Close X button */}
+            <button
+              onClick={(e) => handleDecline(req, e)}
+              style={{
+                position: 'absolute', top: '10px', right: '10px',
+                width: '32px', height: '32px', borderRadius: '8px',
+                background: 'var(--surface-2)', border: '1px solid var(--border)',
+                color: 'var(--text-muted)', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.15s', zIndex: 5,
+              }}
+              title="Close notification"
+            >
+              <X size={16} />
+            </button>
+
             {/* Icon + text */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', paddingRight: '28px' }}>
               <div style={{ position: 'relative', flexShrink: 0 }}>
                 <div style={{
                   width: 42, height: 42, borderRadius: '11px',
@@ -244,18 +265,18 @@ export default function ChatRequestsNotifier({ userId }) {
               </button>
 
               <button
-                onClick={() => handleDecline(req)}
+                onClick={(e) => handleDecline(req, e)}
                 disabled={!!accepting}
-                title="Decline"
+                title="Decline request"
                 style={{
                   background: 'var(--surface-2)', color: 'var(--text-muted)',
                   border: '1px solid var(--border)', borderRadius: '10px',
-                  padding: '11px 13px', fontSize: '13px', cursor: accepting ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', gap: '4px',
+                  padding: '11px 14px', fontSize: '13px', cursor: accepting ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600,
                   opacity: accepting ? 0.5 : 1,
                 }}
               >
-                <X size={15} />
+                <X size={15} /> Decline
               </button>
             </div>
           </div>

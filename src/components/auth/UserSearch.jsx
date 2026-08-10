@@ -17,6 +17,12 @@ export default function UserSearch() {
   const { userId, displayName } = useUser();
   const { addToast } = useToast();
 
+  // Reset states on mount (e.g., when returning back to Dashboard from a chat room)
+  useEffect(() => {
+    setRequestingId(null);
+    setActiveRequest(null);
+  }, []);
+
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const trimmed = query.trim();
@@ -93,6 +99,8 @@ export default function UserSearch() {
 
     } catch (err) {
       addToast(err.message || 'Failed to send chat request', 'error');
+    } finally {
+      // Always reset requestingId so button is never stuck in loading state!
       setRequestingId(null);
     }
   };
@@ -120,13 +128,22 @@ export default function UserSearch() {
               </p>
             </div>
           </div>
-          <button
-            onClick={() => window.location.href = activeRequest.joinUrl}
-            className="btn-primary"
-            style={{ width: 'auto', padding: '7px 14px', fontSize: '12px' }}
-          >
-            Enter Room Now
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              onClick={() => window.location.href = activeRequest.joinUrl}
+              className="btn-primary"
+              style={{ width: 'auto', padding: '7px 14px', fontSize: '12px' }}
+            >
+              Enter Room Now
+            </button>
+            <button
+              onClick={() => setActiveRequest(null)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: '4px' }}
+              title="Dismiss"
+            >
+              <X size={15} />
+            </button>
+          </div>
         </div>
       )}
 
