@@ -102,26 +102,34 @@ export function useRealtimeMessages(roomId) {
       burnAfterRead = false,
       keyEpoch = null,
     }) => {
+      const payload = {
+        room_id: roomId,
+        sender_id: senderId,
+        encrypted_content: encryptedContent,
+        iv,
+        type,
+        file_url: fileUrl,
+        file_name: fileName,
+        file_size: fileSize,
+        file_iv: fileIv || iv,
+        burn_after_read: burnAfterRead,
+        is_read: false,
+      };
+
+      if (keyEpoch) {
+        payload.key_epoch = keyEpoch;
+      }
+
       const { data, error: insertError } = await supabase
         .from('messages')
-        .insert({
-          room_id: roomId,
-          sender_id: senderId,
-          encrypted_content: encryptedContent,
-          iv,
-          type,
-          file_url: fileUrl,
-          file_name: fileName,
-          file_size: fileSize,
-          file_iv: fileIv || iv,
-          burn_after_read: burnAfterRead,
-          is_read: false,
-          key_epoch: keyEpoch, // Forward secrecy: which session key epoch encrypted this message
-        })
+        .insert(payload)
         .select()
         .single();
 
-      if (insertError) throw new Error(insertError.message);
+      if (insertError) {
+        console.error('[useRealtimeMessages] Error sending message:', insertError);
+        throw new Error(insertError.message);
+      }
       return data;
     },
     [roomId]

@@ -324,12 +324,21 @@ export default function ChatPage() {
 
   // Send text message — use forward secrecy session key when available
   const handleSendMessage = useCallback(async (text, burnAfterRead = false) => {
-    if (!keyLoaded || !room?.id) return;
-    resetDmsActivity(); // Reset dead man switch on message send
-    const result = await effectiveEncrypt(text);
-    const { ciphertext, iv, epoch } = result;
-    await sendMessage({ encryptedContent: ciphertext, iv, type: 'text', senderId: userId, burnAfterRead, keyEpoch: epoch || null });
-  }, [keyLoaded, room?.id, effectiveEncrypt, sendMessage, userId, resetDmsActivity]);
+    if (!keyLoaded || !room?.id) {
+      addToast('Room encryption key is initializing...', 'warning');
+      return;
+    }
+    try {
+      resetDmsActivity(); // Reset dead man switch on message send
+      const result = await effectiveEncrypt(text);
+      const { ciphertext, iv, epoch } = result;
+      await sendMessage({ encryptedContent: ciphertext, iv, type: 'text', senderId: userId, burnAfterRead, keyEpoch: epoch || null });
+    } catch (err) {
+      console.error('[ChatPage] Message send error:', err);
+      addToast(err.message || 'Failed to send message', 'error');
+      throw err;
+    }
+  }, [keyLoaded, room?.id, effectiveEncrypt, sendMessage, userId, resetDmsActivity, addToast]);
 
   // Send file (with optional burn after read)
   const handleSendFile = useCallback(async (file, burnAfterRead = false) => {
