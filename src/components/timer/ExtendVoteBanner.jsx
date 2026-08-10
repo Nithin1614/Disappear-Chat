@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Clock, Check, X, ThumbsUp } from 'lucide-react';
+import { Clock, Check, X, ThumbsUp, Hourglass } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../context/ToastContext';
 
@@ -10,7 +10,6 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, memberMa
   const [hasVoted, setHasVoted] = useState(false);
   const [loading, setLoading] = useState(false);
   const { addToast } = useToast();
-  // Prevent double-apply on concurrent re-renders
   const applyingRef = useRef(false);
 
   useEffect(() => {
@@ -37,36 +36,39 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, memberMa
 
     fetchVotes();
 
-    const channel = supabase.channel(`evotes_banner:${roomId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'extend_votes', filter: `room_id=eq.${roomId}` }, fetchVotes)
+    const channel = supabase
+      .channel(`evotes_banner:${roomId}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'extend_votes', filter: `room_id=eq.${roomId}`
+      }, fetchVotes)
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [roomId, userId]);
 
-  // Apply extension only when EXPLICITLY called — not auto-fired
   const applyExtension = async (minsToAdd) => {
     if (applyingRef.current) return;
     applyingRef.current = true;
     try {
-      const { data: room } = await supabase.from('rooms').select('expires_at, duration_minutes').eq('id', roomId).single();
+      const { data: room } = await supabase
+        .from('rooms')
+        .select('expires_at, duration_minutes')
+        .eq('id', roomId)
+        .single();
       if (!room) return;
 
-      const currentExpiry = new Date(room.expires_at).getTime();
-      const now = Date.now();
-      const baseTime = Math.max(currentExpiry, now);
+      const baseTime = Math.max(new Date(room.expires_at).getTime(), Date.now());
       const newExpiry = new Date(baseTime + minsToAdd * 60000);
 
       await supabase.from('rooms').update({
         expires_at: newExpiry.toISOString(),
-        duration_minutes: room.duration_minutes + minsToAdd
+        duration_minutes: room.duration_minutes + minsToAdd,
       }).eq('id', roomId);
 
       await supabase.from('extend_votes').delete().eq('room_id', roomId);
-
-      addToast(`🎉 Room timer extended by +${minsToAdd} minutes!`, 'success');
+      addToast(`🎉 Room extended by +${minsToAdd} minutes!`, 'success');
     } catch (err) {
-      addToast(err.message || 'Failed to extend time', 'error');
+      addToast(err.message || 'Failed to extend', 'error');
     } finally {
       applyingRef.current = false;
     }
@@ -79,40 +81,35 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, memberMa
       const { error } = await supabase.from('extend_votes').insert({
         room_id: roomId,
         user_id: userId,
-        minutes_to_add: minutesToAdd
+        minutes_to_add: minutesToAdd,
       });
       if (error) throw error;
       setHasVoted(true);
-      addToast('Vote cast! Waiting for all members…', 'success');
+      addToast('Vote cast! Waiting for others…', 'success');
 
-      // Fetch current votes AFTER insert to check if all members have voted
+      // Check if all have voted now
       const { data: currentVotes } = await supabase
         .from('extend_votes')
         .select('user_id')
         .eq('room_id', roomId);
 
-      const totalVotes = currentVotes?.length || 0;
-      // Only apply when all members have voted — never before
-      if (totalVotes >= memberCount && memberCount > 0) {
+      if ((currentVotes?.length || 0) >= memberCount && memberCount > 0) {
         await applyExtension(minutesToAdd);
       }
     } catch (err) {
-      addToast(err.message || 'Approval failed', 'error');
+      addToast(err.message || 'Vote failed', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleReject = async () => {
+  const handleCancel = async () => {
     if (loading) return;
-    setLoading(true);
     try {
       await supabase.from('extend_votes').delete().eq('room_id', roomId);
-      addToast('Extension request declined', 'info');
+      addToast('Extension request cancelled', 'info');
     } catch (err) {
-      addToast(err.message || 'Rejection failed', 'error');
-    } finally {
-      setLoading(false);
+      addToast(err.message || 'Failed to cancel', 'error');
     }
   };
 
@@ -120,86 +117,122 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, memberMa
 
   const isRequester = requesterId === userId;
   const requesterName = memberMap[requesterId] || requesterId;
+  const approvedCount = votes.length;
 
   return (
     <div style={{
-      background: 'rgba(16,185,129,0.1)',
-      borderBottom: '1px solid rgba(16,185,129,0.3)',
-      padding: '10px 16px',
+      background: 'rgba(16,185,129,0.08)',
+      borderBottom: '2px solid rgba(16,185,129,0.3)',
+      padding: '10px 14px',
+      flexShrink: 0,
+      // Mobile-first: stack vertically on small screens
       display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: '12px',
-      zIndex: 30,
-      flexWrap: 'wrap',
+      flexDirection: 'column',
+      gap: '10px',
     }}>
+      {/* Top row: icon + info */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <div style={{
-          width: 28, height: 28, borderRadius: '6px',
-          background: 'rgba(16,185,129,0.2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
+          width: 32, height: 32, borderRadius: '8px', flexShrink: 0,
+          background: 'rgba(16,185,129,0.18)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <Clock size={15} color="var(--accent)" />
+          <Hourglass size={15} color="var(--accent)" />
         </div>
-        <div>
-          <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
-            Extension Vote: <span style={{ color: 'var(--accent)' }}>+{minutesToAdd} Minutes</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
+            ⏱ Extend Room Timer
+            <span style={{ marginLeft: '6px', fontSize: '12px', fontWeight: 400, color: 'var(--accent)' }}>
+              +{minutesToAdd} min
+            </span>
           </p>
-          <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-            Requested by <span style={{ fontWeight: 600, color: 'var(--text)' }}>{requesterName}</span> · Approved: {votes.length}/{memberCount}
+          <p style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {isRequester ? 'You requested this' : `Requested by ${requesterName}`} · {approvedCount}/{memberCount} approved
           </p>
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        {!hasVoted ? (
+      {/* Vote progress bar */}
+      <div style={{ height: 3, borderRadius: 2, background: 'var(--surface-3)', overflow: 'hidden' }}>
+        <div style={{
+          height: '100%',
+          width: `${memberCount > 0 ? (approvedCount / memberCount) * 100 : 0}%`,
+          background: 'var(--accent)',
+          borderRadius: 2,
+          transition: 'width 0.4s ease',
+        }} />
+      </div>
+
+      {/* Action buttons row */}
+      <div style={{ display: 'flex', gap: '8px' }}>
+        {!hasVoted && !isRequester ? (
           <>
             <button
               onClick={handleApprove}
-              disabled={loading || isRequester}
-              title={isRequester ? 'You requested this extension' : 'Approve extension'}
+              disabled={loading}
               style={{
+                flex: 1,
                 background: 'var(--accent)', color: '#fff', border: 'none',
-                borderRadius: '6px', padding: '6px 14px', fontSize: '12px', fontWeight: 600,
-                cursor: isRequester ? 'not-allowed' : 'pointer',
-                opacity: isRequester ? 0.5 : 1,
-                display: 'flex', alignItems: 'center', gap: '4px'
+                borderRadius: '8px', padding: '8px 12px', fontSize: '13px', fontWeight: 700,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                opacity: loading ? 0.6 : 1,
               }}
             >
-              <ThumbsUp size={13} /> {isRequester ? 'Waiting for others…' : `Approve (+${minutesToAdd}m)`}
+              {loading
+                ? <><div style={{ width: 13, height: 13, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', animation: 'spin 0.8s linear infinite' }} /> Voting…</>
+                : <><ThumbsUp size={14} /> Approve (+{minutesToAdd}m)</>
+              }
             </button>
-            {!isRequester && (
-              <button
-                onClick={handleReject}
-                disabled={loading}
-                style={{
-                  background: 'var(--surface-3)', color: 'var(--text-muted)', border: '1px solid var(--border)',
-                  borderRadius: '6px', padding: '6px 10px', fontSize: '12px', fontWeight: 500,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
-                }}
-              >
-                <X size={13} /> Reject
-              </button>
-            )}
-          </>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--accent)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Check size={14} /> You Approved — waiting for others
-            </span>
             <button
-              onClick={handleReject}
-              title="Cancel vote"
+              onClick={handleCancel}
               style={{
-                background: 'none', border: 'none', color: 'var(--text-dim)',
-                fontSize: '11px', cursor: 'pointer', textDecoration: 'underline'
+                background: 'var(--surface-3)', color: 'var(--text-muted)', border: '1px solid var(--border)',
+                borderRadius: '8px', padding: '8px 12px', fontSize: '13px',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px',
               }}
             >
-              {isRequester ? 'Cancel Request' : 'Retract'}
+              <X size={13} /> Reject
+            </button>
+          </>
+        ) : hasVoted && !isRequester ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '6px', flex: 1,
+              padding: '8px 12px', borderRadius: '8px',
+              background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)',
+            }}>
+              <Check size={14} color="var(--accent)" />
+              <span style={{ fontSize: '12px', color: 'var(--accent)', fontWeight: 600 }}>
+                Voted — waiting for others ({approvedCount}/{memberCount})
+              </span>
+            </div>
+            <button onClick={handleCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontSize: '11px', textDecoration: 'underline' }}>
+              Retract
             </button>
           </div>
-        )}
+        ) : isRequester ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Clock size={13} color="var(--text-muted)" />
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                Waiting for approval ({approvedCount}/{memberCount})
+              </span>
+            </div>
+            <button
+              onClick={handleCancel}
+              style={{
+                background: 'var(--surface-3)', color: 'var(--text-muted)', border: '1px solid var(--border)',
+                borderRadius: '6px', padding: '5px 10px', fontSize: '11px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '4px',
+              }}
+            >
+              <X size={12} /> Cancel
+            </button>
+          </div>
+        ) : null}
       </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }

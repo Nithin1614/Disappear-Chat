@@ -27,7 +27,7 @@ export default function SecretLinkPage() {
   const { token } = useParams();
   const [state, setState] = useState('loading'); // loading | ready | read | expired | error
   const [message, setMessage] = useState('');
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(20);
   const [linkData, setLinkData] = useState(null);
 
   useEffect(() => {
@@ -69,7 +69,7 @@ export default function SecretLinkPage() {
       await supabase.from('secret_links').delete().eq('token', token);
 
       setState('read');
-      let c = 5;
+      let c = 20;
       const interval = setInterval(() => {
         c--;
         setCountdown(c);
