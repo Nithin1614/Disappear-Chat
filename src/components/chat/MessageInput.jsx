@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, X, Image as ImageIcon, File, Flame, Clock } from 'lucide-react';
+import { Send, Paperclip, X, Image as ImageIcon, File, Flame } from 'lucide-react';
 import { MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB, SUPPORTED_IMAGE_TYPES } from '../../lib/constants';
 
-export default function MessageInput({ onSendMessage, onSendFile, onTyping, disabled, waitingForPeer }) {
+export default function MessageInput({ onSendMessage, onSendFile, onTyping, disabled }) {
   const [text, setText] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [sending, setSending] = useState(false);
@@ -18,7 +18,7 @@ export default function MessageInput({ onSendMessage, onSendFile, onTyping, disa
   }, [text]);
 
   const handleSend = async () => {
-    if (sending || disabled || waitingForPeer) return;
+    if (sending || disabled) return;
     if (selectedFile) {
       setSending(true);
       try { await onSendFile(selectedFile, burnMode); setSelectedFile(null); if (burnMode) setBurnMode(false); } catch { /* handled */ }
@@ -46,27 +46,12 @@ export default function MessageInput({ onSendMessage, onSendFile, onTyping, disa
   };
 
   const isImage = selectedFile && SUPPORTED_IMAGE_TYPES.includes(selectedFile.type);
-  const isInputDisabled = disabled || waitingForPeer;
 
   return (
     <div style={{ borderTop: '1px solid var(--border)', background: 'var(--surface)', padding: '10px 14px' }}>
 
-      {/* Waiting for 2nd participant banner */}
-      {waitingForPeer && !disabled && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px',
-          padding: '8px 12px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)',
-          borderRadius: '8px'
-        }}>
-          <Clock size={14} color="var(--accent)" />
-          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text)', flex: 1 }}>
-            ⏳ Waiting for 2nd participant to join room... Messages can be sent once both users enter.
-          </span>
-        </div>
-      )}
-
       {/* Burn mode banner */}
-      {burnMode && !waitingForPeer && (
+      {burnMode && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px',
           padding: '6px 12px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)',
@@ -103,9 +88,9 @@ export default function MessageInput({ onSendMessage, onSendFile, onTyping, disa
         {/* Attach */}
         <button
           onClick={() => fileInputRef.current?.click()}
-          disabled={isInputDisabled}
+          disabled={disabled}
           title="Attach file"
-          style={{ flexShrink: 0, width: 38, height: 38, borderRadius: '10px', background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isInputDisabled ? 'not-allowed' : 'pointer', color: 'var(--text-muted)', transition: 'color 0.15s', opacity: isInputDisabled ? 0.4 : 1 }}
+          style={{ flexShrink: 0, width: 38, height: 38, borderRadius: '10px', background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: disabled ? 'not-allowed' : 'pointer', color: 'var(--text-muted)', transition: 'color 0.15s', opacity: disabled ? 0.4 : 1 }}
         >
           <Paperclip size={17} />
         </button>
@@ -114,15 +99,15 @@ export default function MessageInput({ onSendMessage, onSendFile, onTyping, disa
         {/* Burn toggle */}
         <button
           onClick={() => setBurnMode(v => !v)}
-          disabled={isInputDisabled}
+          disabled={disabled}
           title={burnMode ? 'Disable Burn After Read' : 'Enable Burn After Read'}
           style={{
             flexShrink: 0, width: 38, height: 38, borderRadius: '10px',
             background: burnMode ? 'rgba(239,68,68,0.18)' : 'var(--surface-2)',
             border: burnMode ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: isInputDisabled ? 'not-allowed' : 'pointer', color: burnMode ? 'var(--danger)' : 'var(--text-muted)',
-            transition: 'all 0.15s', opacity: isInputDisabled ? 0.4 : 1
+            cursor: disabled ? 'not-allowed' : 'pointer', color: burnMode ? 'var(--danger)' : 'var(--text-muted)',
+            transition: 'all 0.15s', opacity: disabled ? 0.4 : 1
           }}
         >
           <Flame size={17} />
@@ -134,8 +119,8 @@ export default function MessageInput({ onSendMessage, onSendFile, onTyping, disa
           value={text}
           onChange={e => { setText(e.target.value); if (onTyping) onTyping(); }}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-          placeholder={waitingForPeer ? '⏳ Waiting for recipient to join room...' : selectedFile ? 'Add a caption...' : burnMode ? '🔥 Burn after read message...' : 'Type a message...'}
-          disabled={isInputDisabled}
+          placeholder={selectedFile ? 'Add a caption...' : burnMode ? '🔥 Burn after read message...' : 'Type a message...'}
+          disabled={disabled}
           rows={1}
           style={{
             flex: 1, resize: 'none', maxHeight: '100px', overflowY: 'auto',
@@ -143,8 +128,7 @@ export default function MessageInput({ onSendMessage, onSendFile, onTyping, disa
             border: burnMode ? '1px solid rgba(239,68,68,0.35)' : '1px solid var(--border)',
             borderRadius: '10px',
             color: 'var(--text)', padding: '10px 14px', fontSize: '14px', fontFamily: 'inherit', lineHeight: '1.4',
-            outline: 'none', transition: 'border-color 0.15s', opacity: isInputDisabled ? 0.4 : 1,
-            cursor: isInputDisabled ? 'not-allowed' : 'text',
+            outline: 'none', transition: 'border-color 0.15s', opacity: disabled ? 0.4 : 1,
           }}
           onFocus={e => e.target.style.borderColor = burnMode ? 'rgba(239,68,68,0.6)' : 'var(--accent)'}
           onBlur={e => e.target.style.borderColor = burnMode ? 'rgba(239,68,68,0.35)' : 'var(--border)'}
@@ -153,14 +137,14 @@ export default function MessageInput({ onSendMessage, onSendFile, onTyping, disa
         {/* Send */}
         <button
           onClick={handleSend}
-          disabled={sending || isInputDisabled || (!text.trim() && !selectedFile)}
+          disabled={sending || disabled || (!text.trim() && !selectedFile)}
           style={{
             flexShrink: 0, width: 38, height: 38, borderRadius: '10px',
             background: burnMode ? 'var(--danger)' : 'var(--accent)',
             border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: (sending || isInputDisabled || (!text.trim() && !selectedFile)) ? 'not-allowed' : 'pointer',
+            cursor: (sending || disabled || (!text.trim() && !selectedFile)) ? 'not-allowed' : 'pointer',
             transition: 'background 0.15s, transform 0.1s',
-            opacity: (sending || isInputDisabled || (!text.trim() && !selectedFile)) ? 0.35 : 1,
+            opacity: (sending || disabled || (!text.trim() && !selectedFile)) ? 0.35 : 1,
           }}
         >
           {sending

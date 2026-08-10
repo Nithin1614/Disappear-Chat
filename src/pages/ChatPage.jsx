@@ -683,6 +683,37 @@ export default function ChatPage() {
             onScroll={handleMessagesScroll}
             style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingTop: '16px', paddingBottom: '8px' }}
           >
+            {/* Dialogue window when waiting for 2nd participant */}
+            {onlineMembers.length < 2 && (
+              <div style={{
+                background: 'var(--surface-2)',
+                border: '1px solid var(--accent-border)',
+                borderRadius: '14px',
+                padding: '14px 18px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '14px',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+              }}>
+                <div style={{
+                  width: 38, height: 38, borderRadius: '10px',
+                  background: 'var(--accent-dim)', border: '1px solid var(--accent-border)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                }}>
+                  <Lock size={18} color="var(--accent)" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', margin: '0 0 3px 0' }}>
+                    🔒 End-to-End Encrypted Session
+                  </h4>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0, lineHeight: '1.4' }}>
+                    Chat encryption begins when both participants join. The recipient will only see messages sent after they enter the room.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {messagesLoading ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
                 <LoadingSpinner text="Loading messages…" />
@@ -725,7 +756,6 @@ export default function ChatPage() {
           onSendFile={handleSendFile}
           onTyping={handleTyping}
           disabled={countdown.isExpired}
-          waitingForPeer={onlineMembers.length < 2}
         />
       </div>
 
