@@ -1,12 +1,13 @@
 # VanishChat — Private Messaging. Zero History.
 
-> Self-destructing encrypted rooms, ephemeral chat links, and zero-knowledge security. Nothing stays.
-
+[![100% Free](https://img.shields.io/badge/100%25%20Free-24%2F7%20Available-10B981?style=flat-square)](#)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite)](https://vite.dev/)
 [![Supabase](https://img.shields.io/badge/Supabase-Realtime-3FCF8E?style=flat-square&logo=supabase)](https://supabase.com/)
 [![AES-256-GCM](https://img.shields.io/badge/Encryption-AES--256--GCM-8B5CF6?style=flat-square&logo=letsencrypt)](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto)
 [![Zero Logs](https://img.shields.io/badge/Logs-Zero-EF4444?style=flat-square)](/)
+
+> **100% Completely Free — 24/7 Available for Everyone.** No credit card, no sign-up, no restrictions.
 
 ---
 
