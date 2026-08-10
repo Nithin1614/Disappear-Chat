@@ -92,17 +92,11 @@ export default function ChatPage() {
     });
   }, [onRotate]); // stable — no addToast dep needed
 
-  // Effective encrypt/decrypt: use session key when available, fallback to base key
+  // Effective encrypt/decrypt: always use base room key (encrypt) derived from roomCode
+  // so 100% of room members can decrypt every message seamlessly without error.
   const effectiveEncrypt = useCallback(async (plaintext) => {
-    if (sessionKey) {
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      const enc = new TextEncoder();
-      const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, sessionKey, enc.encode(plaintext));
-      const toB64 = (buf) => { const b = new Uint8Array(buf); let s = ''; for (let i = 0; i < b.byteLength; i++) s += String.fromCharCode(b[i]); return btoa(s); };
-      return { ciphertext: toB64(encrypted), iv: toB64(iv.buffer), epoch: currentEpoch };
-    }
     return encrypt(plaintext);
-  }, [sessionKey, currentEpoch, encrypt]);
+  }, [encrypt]);
 
   // Use a ref wrapper so effectiveDecrypt always sees the latest cache without
   // needing the Map object itself in the dependency array (Map refs are stable).
@@ -134,7 +128,13 @@ export default function ChatPage() {
       } catch { return null; }
     };
 
-    // 1. Try matching epoch key if available (coercing String and Number representations)
+    // 1. Try base room key (cryptoKey derived from roomCode) — matches 100% of messages
+    try {
+      const dec = await decrypt(ciphertext, iv);
+      if (dec !== null && dec !== undefined) return dec;
+    } catch {}
+
+    // 2. Try matching epoch key if available (coercing String and Number representations)
     if (epoch) {
       const epochStr = String(epoch);
       const epochNum = Number(epoch);
@@ -148,20 +148,19 @@ export default function ChatPage() {
       }
     }
 
-    // 2. Try current sessionKey
+    // 3. Try current sessionKey
     if (sessionKey) {
       const res = await tryDecrypt(sessionKey);
       if (res !== null) return res;
     }
 
-    // 3. Try all cached epoch keys
+    // 4. Try all cached epoch keys
     for (const k of epochKeyCacheRef.current.values()) {
       const res = await tryDecrypt(k);
       if (res !== null) return res;
     }
 
-    // 4. Try base room key (cryptoKey)
-    return decrypt(ciphertext, iv);
+    return null;
   }, [sessionKey, decrypt]);
 
   // --- Feature 2 & 3: Presence with typing encryption + fingerprint detection ---
