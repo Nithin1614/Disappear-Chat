@@ -86,9 +86,10 @@ export function useCountdown(expiresAt, durationMinutes = 0) {
     const isUnder30Sec = totalSeconds > 0 && totalSeconds <= 30;
     const rawExpired = totalSeconds <= 0;
 
-    // Grace period: 30 extra seconds before actually marking expired
-    const inGracePeriod = rawExpired && graceSecondsLeft > 0;
-    const isExpired = rawExpired && graceSecondsLeft <= 0;
+    // Grace period only applies for sessions longer than 4 minutes
+    const graceEligible = durationMinutes > 4;
+    const inGracePeriod = rawExpired && graceEligible && graceSecondsLeft > 0;
+    const isExpired = rawExpired && (!graceEligible || graceSecondsLeft <= 0);
 
     const pad = (n) => String(n).padStart(2, '0');
     const formatted = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
