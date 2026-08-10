@@ -725,6 +725,7 @@ export default function ChatPage() {
           onSendFile={handleSendFile}
           onTyping={handleTyping}
           disabled={countdown.isExpired}
+          waitingForPeer={onlineMembers.length < 2}
         />
       </div>
 

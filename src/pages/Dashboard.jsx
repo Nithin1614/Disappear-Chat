@@ -33,13 +33,22 @@ export default function Dashboard() {
     if (!isAuthenticated) window.location.href = '/';
   }, [isAuthenticated]);
 
+  const consumeReentry = (code) => {
+    sessionStorage.removeItem('vanishchat_last_active_room');
+    if (code && userId) {
+      sessionStorage.setItem(`vanishchat_reentry_consumed_${userId}_${code}`, 'true');
+    }
+    setRejoinRoomCode(null);
+  };
+
   // Check if user accidentally exited an active chat room
   useEffect(() => {
-    const isConsumed = sessionStorage.getItem('vanishchat_reentry_consumed') === 'true';
-    if (isConsumed) return;
-
     const lastRoom = sessionStorage.getItem('vanishchat_last_active_room');
-    if (!lastRoom) return;
+    if (!lastRoom || !userId) return;
+
+    const consumedKey = `vanishchat_reentry_consumed_${userId}_${lastRoom}`;
+    const isConsumed = sessionStorage.getItem(consumedKey) === 'true';
+    if (isConsumed) return;
 
     async function checkRejoin() {
       const { data, error } = await supabase
@@ -63,7 +72,7 @@ export default function Dashboard() {
     }
 
     checkRejoin();
-  }, []);
+  }, [userId]);
 
   // 12-second expiration timer with progress bar
   useEffect(() => {
@@ -83,16 +92,14 @@ export default function Dashboard() {
 
       if (remaining <= 0) {
         clearInterval(timerRef.current);
-        sessionStorage.removeItem('vanishchat_last_active_room');
-        sessionStorage.setItem('vanishchat_reentry_consumed', 'true');
-        setRejoinRoomCode(null);
+        consumeReentry(rejoinRoomCode);
       }
     }, 100);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [rejoinRoomCode]);
+  }, [rejoinRoomCode, userId]);
 
   if (!isAuthenticated) return null;
 
@@ -103,16 +110,12 @@ export default function Dashboard() {
 
   const handleRejoin = () => {
     const code = rejoinRoomCode;
-    sessionStorage.removeItem('vanishchat_last_active_room');
-    sessionStorage.setItem('vanishchat_reentry_consumed', 'true');
-    setRejoinRoomCode(null);
+    consumeReentry(code);
     window.location.href = `/room/${code}`;
   };
 
   const dismissRejoin = () => {
-    sessionStorage.removeItem('vanishchat_last_active_room');
-    sessionStorage.setItem('vanishchat_reentry_consumed', 'true');
-    setRejoinRoomCode(null);
+    consumeReentry(rejoinRoomCode);
   };
 
   return (
