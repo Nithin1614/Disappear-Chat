@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, MessageSquarePlus, Clock, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useUser } from '../../context/UserContext';
@@ -7,11 +7,12 @@ import { generateRoomCode } from '../../lib/userIdGenerator';
 
 export default function UserSearch() {
   const [query, setQuery] = useState('');
-  const [resultUser, setResultUser] = useState(null);
+  const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
   const [requestingId, setRequestingId] = useState(null);
   const [activeRequest, setActiveRequest] = useState(null);
+  const debounceRef = useRef(null);
 
   const { userId, displayName } = useUser();
   const { addToast } = useToast();
@@ -20,41 +21,37 @@ export default function UserSearch() {
   useEffect(() => {
     setRequestingId(null);
     setActiveRequest(null);
-    setResultUser(null);
-    setSearched(false);
   }, []);
 
-  const handleSearch = async (e) => {
-    if (e) e.preventDefault();
+  // Live auto-detect with 300ms debounce — max 3 similar entries, never shows all users
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     const trimmed = query.trim();
-    if (!trimmed) return;
 
-    setSearching(true);
-    setSearched(true);
-    setResultUser(null);
+    // Need at least 2 chars before showing any results
+    if (trimmed.length < 2) {
+      setResults([]);
+      setSearched(false);
+      return;
+    }
 
-    try {
-      // Exact match search only (display_name or user_id)
-      const { data, error } = await supabase
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true);
+      setSearched(true);
+
+      const { data } = await supabase
         .from('users')
         .select('user_id, display_name')
-        .or(`display_name.ilike.${trimmed},user_id.eq.${trimmed}`)
+        .or(`user_id.ilike.%${trimmed}%,display_name.ilike.%${trimmed}%`)
         .neq('user_id', userId || '')
-        .limit(1);
+        .limit(3); // Strict cap — never show more than 3 closest matches
 
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        setResultUser(data[0]);
-      } else {
-        setResultUser(null);
-      }
-    } catch (err) {
-      addToast(err.message || 'Search failed', 'error');
-    } finally {
+      setResults(data || []);
       setSearching(false);
-    }
-  };
+    }, 300);
+
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [query, userId]);
 
   const handleRequestChat = async (targetUser) => {
     if (requestingId) return;
@@ -119,6 +116,11 @@ export default function UserSearch() {
         joinUrl,
       });
 
+      // Clear search after sending request
+      setQuery('');
+      setResults([]);
+      setSearched(false);
+
       addToast(`Chat request sent to ${targetUser.display_name || targetUser.user_id}!`, 'success');
 
     } catch (err) {
@@ -126,12 +128,6 @@ export default function UserSearch() {
     } finally {
       setRequestingId(null);
     }
-  };
-
-  const clearSearch = () => {
-    setQuery('');
-    setResultUser(null);
-    setSearched(false);
   };
 
   return (
@@ -180,133 +176,127 @@ export default function UserSearch() {
         </div>
       )}
 
-      {/* Search input form */}
-      <form onSubmit={handleSearch} style={{ display: 'flex', gap: '8px' }}>
-        <div style={{ position: 'relative', flex: 1 }}>
-          <Search size={14} style={{
-            position: 'absolute', left: '12px', top: '50%',
-            transform: 'translateY(-50%)', color: 'var(--text-dim)', pointerEvents: 'none'
-          }} />
-          <input
-            className="input-field"
-            style={{ paddingLeft: '36px', paddingRight: query ? '36px' : '14px' }}
-            type="text"
-            value={query}
-            onChange={e => {
-              setQuery(e.target.value);
-              if (!e.target.value.trim()) clearSearch();
+      {/* Search input — live auto-detect, no button */}
+      <div style={{ position: 'relative' }}>
+        <Search size={14} style={{
+          position: 'absolute', left: '12px', top: '50%',
+          transform: 'translateY(-50%)', color: 'var(--text-dim)', pointerEvents: 'none'
+        }} />
+        <input
+          className="input-field"
+          style={{ paddingLeft: '36px', paddingRight: query ? '36px' : '14px' }}
+          type="text"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Type a name or User ID to find users…"
+          autoComplete="off"
+        />
+        {query && (
+          <button
+            onClick={() => { setQuery(''); setResults([]); setSearched(false); }}
+            style={{
+              position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
+              background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)',
+              display: 'flex', padding: '2px',
             }}
-            placeholder="Enter exact Username or User ID…"
-            autoComplete="off"
-          />
-          {query && (
-            <button
-              type="button"
-              onClick={clearSearch}
-              style={{
-                position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
-                background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)',
-                display: 'flex', padding: '2px',
-              }}
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
 
-        <button
-          type="submit"
-          disabled={searching || !query.trim()}
-          style={{
-            background: 'var(--accent)', color: '#fff', border: 'none',
-            borderRadius: '10px', padding: '0 18px', fontSize: '13px', fontWeight: 700,
-            cursor: (searching || !query.trim()) ? 'not-allowed' : 'pointer',
-            opacity: (searching || !query.trim()) ? 0.5 : 1,
-            flexShrink: 0, height: '42px', display: 'flex', alignItems: 'center', gap: '6px',
-          }}
-        >
-          {searching ? 'Searching…' : 'Find User'}
-        </button>
-      </form>
+      {/* Hint text */}
+      {query.trim().length === 1 && (
+        <p style={{ fontSize: '12px', color: 'var(--text-dim)', margin: '-6px 0 0 2px' }}>
+          Type at least 2 characters to search…
+        </p>
+      )}
 
-      {/* Searching indicator */}
+      {/* Searching spinner */}
       {searching && (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0', gap: '8px', alignItems: 'center' }}>
           <div style={{
-            width: 18, height: 18, borderRadius: '50%',
+            width: 16, height: 16, borderRadius: '50%',
             border: '2px solid var(--surface-3)', borderTop: '2px solid var(--accent)',
             animation: 'spin 0.8s linear infinite'
           }} />
-          <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Checking user existence…</span>
+          <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Searching…</span>
           <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         </div>
       )}
 
-      {/* No exact match result */}
-      {!searching && searched && !resultUser && (
-        <div style={{ textAlign: 'center', padding: '16px', background: 'var(--surface-2)', borderRadius: '12px', border: '1px solid var(--border)' }}>
-          <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>No user matches exact name or ID "{query}"</p>
-          <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>Please double check spelling and enter the exact Username or User ID.</p>
+      {/* No results */}
+      {!searching && searched && results.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '12px', background: 'var(--surface-2)', borderRadius: '10px', border: '1px solid var(--border)' }}>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>No users matching "{query}"</p>
         </div>
       )}
 
-      {/* Single exact result user card */}
-      {!searching && resultUser && (
-        <div
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
-            padding: '14px 16px', borderRadius: '12px',
-            background: 'var(--surface-2)', border: '1px solid var(--accent-border)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-            <div style={{
-              width: 42, height: 42, borderRadius: '50%',
-              background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              fontSize: '16px', fontWeight: 700, color: '#fff',
-            }}>
-              {(resultUser.display_name || resultUser.user_id).charAt(0).toUpperCase()}
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {resultUser.display_name || resultUser.user_id}
-              </p>
-              <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', color: 'var(--text-muted)' }}>
-                ID: {resultUser.user_id}
-              </p>
-            </div>
-          </div>
+      {/* Results list — max 3 */}
+      {!searching && results.map(u => {
+        const isRequestingThis = requestingId === u.user_id;
 
-          <button
-            onClick={() => handleRequestChat(resultUser)}
-            disabled={!!requestingId}
+        return (
+          <div
+            key={u.user_id}
             style={{
-              background: 'var(--accent)',
-              color: '#fff',
-              border: 'none', borderRadius: '10px',
-              padding: '10px 16px', fontSize: '13px', fontWeight: 700,
-              cursor: requestingId ? 'not-allowed' : 'pointer',
-              opacity: requestingId ? 0.6 : 1,
-              display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0,
-              whiteSpace: 'nowrap', transition: 'all 0.15s',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+              padding: '12px 14px', borderRadius: '12px',
+              background: 'var(--surface-2)', border: '1px solid var(--border)',
+              transition: 'border-color 0.15s',
             }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent-border)'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
           >
-            {requestingId === resultUser.user_id ? (
-              <>
-                <div style={{
-                  width: 13, height: 13, borderRadius: '50%',
-                  border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff',
-                  animation: 'spin 0.8s linear infinite'
-                }} />
-                Sending Request…
-              </>
-            ) : (
-              <><MessageSquarePlus size={15} /> Direct Chat (5m)</>
-            )}
-          </button>
-        </div>
-      )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+              <div style={{
+                width: 38, height: 38, borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                fontSize: '15px', fontWeight: 700, color: '#fff',
+              }}>
+                {(u.display_name || u.user_id).charAt(0).toUpperCase()}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {u.display_name || u.user_id}
+                </p>
+                <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', color: 'var(--text-muted)' }}>
+                  ID: {u.user_id}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => handleRequestChat(u)}
+              disabled={!!requestingId}
+              style={{
+                background: 'var(--accent)',
+                color: '#fff',
+                border: 'none', borderRadius: '8px',
+                padding: '8px 14px', fontSize: '12px', fontWeight: 700,
+                cursor: requestingId ? 'not-allowed' : 'pointer',
+                opacity: requestingId ? 0.6 : 1,
+                display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0,
+                whiteSpace: 'nowrap', transition: 'all 0.15s',
+              }}
+            >
+              {isRequestingThis ? (
+                <>
+                  <div style={{
+                    width: 13, height: 13, borderRadius: '50%',
+                    border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff',
+                    animation: 'spin 0.8s linear infinite'
+                  }} />
+                  Sending…
+                </>
+              ) : (
+                <><MessageSquarePlus size={14} /> Direct Chat (5m)</>
+              )}
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -87,9 +87,13 @@ async function decryptSessionKeyPayload(encryptedKey, iv, baseKey) {
  * - Rotates every 5 minutes — discarding old keys from memory after rotation
  * - Old epochs are cached for decrypting previously received messages
  *
+ * FIX: Late joiners broadcast a `request_session_key` event so any already-present
+ * participant can re-send their current key. This solves the "User A joins first,
+ * sends a message, User B joins later and can't decrypt it" problem.
+ *
  * @param {string} roomId - Supabase room ID
  * @param {string} userId - Current user ID
- * @param {CryptoKey|null} baseKey - The deterministic PBKDF2 room key (used to encrypt session key exchange)
+ * @param {CryptoKey|null} baseKey - The deterministic PBKDF2 room key
  * @returns {{ sessionKey: CryptoKey|null, epochKeyCache: Map, currentEpoch: number, isReady: boolean }}
  */
 export function useForwardSecrecy(roomId, userId, baseKey) {
@@ -100,6 +104,27 @@ export function useForwardSecrecy(roomId, userId, baseKey) {
   const channelRef = useRef(null);
   const rotationTimerRef = useRef(null);
   const onRotateCallbackRef = useRef(null);
+
+  // Stable refs so callbacks inside channel handlers always see latest values
+  const currentEpochRef = useRef(0);
+  const currentSessionKeyRef = useRef(null);
+  useEffect(() => { currentEpochRef.current = currentEpoch; }, [currentEpoch]);
+  useEffect(() => { currentSessionKeyRef.current = sessionKey; }, [sessionKey]);
+
+  const broadcastCurrentKey = useCallback(async (broadcastChannel) => {
+    if (!baseKey || !broadcastChannel || !currentSessionKeyRef.current || !currentEpochRef.current) return;
+    try {
+      const keyB64 = await exportKeyToBase64(currentSessionKeyRef.current);
+      const { encryptedKey, iv } = await encryptSessionKeyPayload(keyB64, baseKey);
+      broadcastChannel.send({
+        type: 'broadcast',
+        event: 'session_key_rotate',
+        payload: { encryptedKey, iv, epoch: currentEpochRef.current, from: userId },
+      });
+    } catch (err) {
+      console.error('[ForwardSecrecy] Failed to re-broadcast key:', err);
+    }
+  }, [baseKey, userId]);
 
   const rotateKey = useCallback(async (broadcastChannel) => {
     if (!baseKey || !broadcastChannel) return;
@@ -124,6 +149,9 @@ export function useForwardSecrecy(roomId, userId, baseKey) {
       for (const [ep] of epochKeyCacheRef.current) {
         if (ep < cutoff) epochKeyCacheRef.current.delete(ep);
       }
+
+      currentEpochRef.current = newEpoch;
+      currentSessionKeyRef.current = newKey;
 
       setSessionKey(newKey);
       setCurrentEpoch(newEpoch);
@@ -156,16 +184,30 @@ export function useForwardSecrecy(roomId, userId, baseKey) {
           payload.encryptedKey, payload.iv, baseKey
         );
         const importedKey = await importKeyFromBase64(decryptedKeyB64);
+
+        // Always cache every epoch key received — even if it's an older epoch
         epochKeyCacheRef.current.set(payload.epoch, importedKey);
 
         if (!cancelled) {
-          setSessionKey(importedKey);
-          setCurrentEpoch(payload.epoch);
-          setIsReady(true);
+          // Update session key if this epoch is newer than what we have
+          if (payload.epoch >= currentEpochRef.current) {
+            currentSessionKeyRef.current = importedKey;
+            currentEpochRef.current = payload.epoch;
+            setSessionKey(importedKey);
+            setCurrentEpoch(payload.epoch);
+            setIsReady(true);
+          }
         }
       } catch (err) {
         console.error('[ForwardSecrecy] Failed to receive peer key:', err);
       }
+    });
+
+    // *** KEY FIX: When a peer signals they just joined, re-broadcast our current key to them ***
+    channel.on('broadcast', { event: 'request_session_key' }, async ({ payload }) => {
+      if (cancelled || !payload || payload.from === userId) return;
+      // Re-send our current session key so the late joiner can decrypt past messages
+      await broadcastCurrentKey(channel);
     });
 
     channel.subscribe(async (status) => {
@@ -173,6 +215,14 @@ export function useForwardSecrecy(roomId, userId, baseKey) {
         channelRef.current = channel;
         // Generate and broadcast initial session key
         await rotateKey(channel);
+
+        // Also request any existing peer's keys (in case we are the late joiner)
+        channel.send({
+          type: 'broadcast',
+          event: 'request_session_key',
+          payload: { from: userId },
+        });
+
         // Schedule rotation every 5 minutes
         rotationTimerRef.current = setInterval(() => rotateKey(channel), KEY_ROTATION_MS);
       }
@@ -186,7 +236,7 @@ export function useForwardSecrecy(roomId, userId, baseKey) {
         channelRef.current = null;
       }
     };
-  }, [roomId, userId, baseKey, rotateKey]);
+  }, [roomId, userId, baseKey, rotateKey, broadcastCurrentKey]);
 
   return {
     sessionKey,
