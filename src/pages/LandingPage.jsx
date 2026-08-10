@@ -16,7 +16,7 @@ export default function LandingPage() {
       {/* Ambient background glow */}
       <div style={{
         position: 'absolute', top: '-100px', left: '50%', transform: 'translateX(-50%)',
-        width: '700px', height: '400px', background: 'radial-gradient(circle, rgba(245,158,11,0.22) 0%, rgba(0,0,0,0) 70%)',
+        width: '700px', height: '400px', background: 'radial-gradient(circle, rgba(16,185,129,0.22) 0%, rgba(0,0,0,0) 70%)',
         pointerEvents: 'none', zIndex: 0, filter: 'blur(50px)', opacity: 0.85
       }} />
 
@@ -32,7 +32,7 @@ export default function LandingPage() {
             display: 'inline-flex', alignItems: 'center', gap: '8px',
             background: 'var(--surface-2)', border: '1px solid var(--accent-border)',
             borderRadius: '100px', padding: '6px 18px', marginBottom: '20px',
-            boxShadow: '0 0 24px rgba(245,158,11,0.2)',
+            boxShadow: '0 0 24px rgba(16,185,129,0.2)',
           }}>
             <Sparkles size={14} color="var(--accent)" />
             <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', letterSpacing: '0.02em' }}>
@@ -47,7 +47,7 @@ export default function LandingPage() {
           }}>
             Encrypted Messaging <br />
             <span style={{
-              background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #fef08a 100%)',
+              background: 'linear-gradient(135deg, #10b981 0%, #34d399 50%, #6ee7b7 100%)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
             }}>
               That Vanishes on Expiry.

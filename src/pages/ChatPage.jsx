@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Shield, Share2, AlertTriangle, ArrowLeft, Lock } from 'lucide-react';
+import { Shield, Share2, AlertTriangle, ArrowLeft, Lock, Bell, BellOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useUser } from '../context/UserContext';
 import { useToast } from '../context/ToastContext';
@@ -11,7 +11,7 @@ import { useCountdown } from '../hooks/useCountdown';
 import { useNotificationSound } from '../hooks/useNotificationSound';
 import { useFileUpload } from '../hooks/useFileUpload';
 import { useThanosSnap } from '../hooks/useThanosSnap';
-import { SUPPORTED_IMAGE_TYPES, TIMER_WARNING_SECONDS } from '../lib/constants';
+import { SUPPORTED_IMAGE_TYPES, TIMER_WARNING_SECONDS, MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB } from '../lib/constants';
 import Header from '../components/ui/Header';
 import MessageBubble from '../components/chat/MessageBubble';
 import MessageInput from '../components/chat/MessageInput';
@@ -24,6 +24,7 @@ import ExtendVoteBanner from '../components/timer/ExtendVoteBanner';
 import QRCodeModal from '../components/room/QRCodeModal';
 import ThanosSnap from '../components/effects/ThanosSnap';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import ScreenshotGuard from '../components/ui/ScreenshotGuard';
 
 export default function ChatPage() {
   const { roomCode } = useParams();
@@ -44,33 +45,35 @@ export default function ChatPage() {
   const [decryptedImages, setDecryptedImages] = useState({});
   const [snapTriggered, setSnapTriggered] = useState(false);
   const [warningShown, setWarningShown] = useState(false);
+  const [showGraceBanner, setShowGraceBanner] = useState(false);
+  const [partnerLeftToast, setPartnerLeftToast] = useState(false);
 
   const chatContainerRef = useRef(null);
   const messagesEndRef = useRef(null);
   const prevMessageCountRef = useRef(0);
+  const prevMemberCountRef = useRef(0);
 
-  // --- Hooks Preserved ---
-  const { encrypt, decrypt, encryptFile: encryptFileHook, keyLoaded, error: keyError } = useEncryption(roomCode);
+  // --- Hooks ---
+  const { encrypt, decrypt, encryptFile: encryptFileHook, keyLoaded, cryptoKey, error: keyError } = useEncryption(roomCode);
   const { messages, sendMessage, loading: messagesLoading } = useRealtimeMessages(room?.id);
   const { onlineMembers, typingUsers, trackTyping } = usePresence(room?.id, userId, displayName);
+  const { playSound, isTabFocused, isMuted, toggleMute } = useNotificationSound();
+  const { downloadFile, getDecryptedUrl } = useFileUpload(room?.id);
+  const { triggerSnap } = useThanosSnap();
 
-  // Member lookup map (User ID -> Username)
+  // Member lookup map (User ID -> Display Name)
   const memberMap = useMemo(() => {
     const map = {};
-    onlineMembers.forEach(m => {
-      map[m.user_id] = m.display_name || m.user_id;
-    });
+    onlineMembers.forEach(m => { map[m.user_id] = m.display_name || m.user_id; });
     return map;
   }, [onlineMembers]);
+
   const countdown = useCountdown(room?.expires_at, room?.duration_minutes);
-  const { playSound, isTabFocused } = useNotificationSound();
-  const { downloadFile } = useFileUpload(room?.id);
-  const { triggerSnap } = useThanosSnap();
 
   // Auth redirect
   useEffect(() => { if (!isAuthenticated) window.location.href = '/'; }, [isAuthenticated]);
 
-  // Fetch room details
+  // Fetch room details + poll
   useEffect(() => {
     if (!roomCode) return;
     let pollInterval;
@@ -85,7 +88,7 @@ export default function ChatPage() {
       setRoomLoading(false);
       if (userId) {
         await supabase.from('room_members').upsert(
-          { room_id: data.id, user_id: userId, is_online: true },
+          { room_id: data.id, user_id: userId, is_online: true, display_name: displayName || userId },
           { onConflict: 'room_id,user_id' }
         );
       }
@@ -98,9 +101,34 @@ export default function ChatPage() {
     }, 4000);
 
     return () => clearInterval(pollInterval);
-  }, [roomCode, userId]);
+  }, [roomCode, userId, displayName]);
 
-  // Decrypt messages
+  // Mark offline on leave
+  useEffect(() => {
+    if (!room?.id || !userId) return;
+    return () => {
+      supabase.from('room_members').update({ is_online: false }).eq('room_id', room.id).eq('user_id', userId).then(() => {});
+    };
+  }, [room?.id, userId]);
+
+  // 2-person room: auto-terminate when partner exits
+  useEffect(() => {
+    if (!room || room.max_members !== 2) return;
+    const count = onlineMembers.length;
+    const prevCount = prevMemberCountRef.current;
+    prevMemberCountRef.current = count;
+
+    // Someone just left (had 2, now have 1 or 0) and it's not the initial load
+    if (prevCount === 2 && count < 2 && !partnerLeftToast) {
+      setPartnerLeftToast(true);
+      addToast('Your chat partner has left the room.', 'info');
+      // Mark room inactive
+      supabase.from('rooms').update({ is_active: false }).eq('id', room.id).then(() => {});
+      setTimeout(() => { window.location.href = '/dashboard'; }, 3000);
+    }
+  }, [onlineMembers, room, partnerLeftToast, addToast]);
+
+  // Decrypt text messages
   useEffect(() => {
     if (!keyLoaded || !messages.length) return;
     (async () => {
@@ -114,6 +142,24 @@ export default function ChatPage() {
       setDecryptedMessages(updated);
     })();
   }, [messages, keyLoaded, decrypt]);
+
+  // Decrypt inline images
+  useEffect(() => {
+    if (!keyLoaded || !cryptoKey || !messages.length) return;
+    (async () => {
+      const updated = { ...decryptedImages };
+      for (const msg of messages) {
+        if (msg.type !== 'image' || updated[msg.id] || !msg.file_url) continue;
+        try {
+          const fileIv = msg.file_iv || msg.iv;
+          if (!fileIv) continue;
+          const url = await getDecryptedUrl(msg.file_url, fileIv, cryptoKey, 'image/png');
+          updated[msg.id] = url;
+        } catch { /* decryption failed silently */ }
+      }
+      setDecryptedImages(updated);
+    })();
+  }, [messages, keyLoaded, cryptoKey, getDecryptedUrl]);
 
   // Sound notification
   useEffect(() => {
@@ -129,7 +175,7 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, decryptedMessages]);
 
-  // Mark unread
+  // Mark messages as read
   useEffect(() => {
     if (!room?.id || !userId || !messages.length) return;
     const unread = messages.filter(m => m.sender_id !== userId && !m.is_read);
@@ -148,26 +194,37 @@ export default function ChatPage() {
     }
   }, [countdown, warningShown, addToast]);
 
-  // Thanos snap trigger
+  // Grace period banner
   useEffect(() => {
-    if (countdown.isExpired && countdown.timerStarted && !snapTriggered) {
+    if (countdown.inGracePeriod && !showGraceBanner) {
+      setShowGraceBanner(true);
+    }
+    if (!countdown.inGracePeriod && countdown.isExpired) {
+      setShowGraceBanner(false);
+    }
+  }, [countdown.inGracePeriod, countdown.isExpired, showGraceBanner]);
+
+  // Thanos snap trigger — only after grace period ends
+  useEffect(() => {
+    if (countdown.isExpired && countdown.timerStarted && !countdown.inGracePeriod && !snapTriggered) {
       setSnapTriggered(true);
       if (chatContainerRef.current) {
         triggerSnap(chatContainerRef.current, () => {});
       }
     }
-  }, [countdown.isExpired, countdown.timerStarted, snapTriggered, triggerSnap]);
+  }, [countdown.isExpired, countdown.timerStarted, countdown.inGracePeriod, snapTriggered, triggerSnap]);
 
-  // Send text message
-  const handleSendMessage = useCallback(async (text) => {
+  // Send text message (with optional burn after read)
+  const handleSendMessage = useCallback(async (text, burnAfterRead = false) => {
     if (!keyLoaded || !room?.id) return;
     const { ciphertext, iv } = await encrypt(text);
-    await sendMessage({ encryptedContent: ciphertext, iv, type: 'text', senderId: userId });
+    await sendMessage({ encryptedContent: ciphertext, iv, type: 'text', senderId: userId, burnAfterRead });
   }, [keyLoaded, room?.id, encrypt, sendMessage, userId]);
 
-  // Send file
-  const handleSendFile = useCallback(async (file) => {
+  // Send file (with optional burn after read)
+  const handleSendFile = useCallback(async (file, burnAfterRead = false) => {
     if (!keyLoaded || !room?.id) return;
+    if (file.size > MAX_FILE_SIZE_BYTES) { addToast(`File too large. Max ${MAX_FILE_SIZE_MB}MB.`, 'error'); return; }
     try {
       const isImg = SUPPORTED_IMAGE_TYPES.includes(file.type);
       const buf = await file.arrayBuffer();
@@ -179,17 +236,26 @@ export default function ChatPage() {
       if (upErr) throw upErr;
       const caption = isImg ? '📷 Image' : `📎 ${file.name}`;
       const { ciphertext, iv } = await encrypt(caption);
-      await sendMessage({ encryptedContent: ciphertext, iv, type: isImg ? 'image' : 'file', senderId: userId, fileUrl: filePath, fileName: file.name, fileSize: file.size });
+      // Pass fileIv properly so recipients can decrypt
+      await sendMessage({
+        encryptedContent: ciphertext, iv, type: isImg ? 'image' : 'file',
+        senderId: userId, fileUrl: filePath, fileName: file.name, fileSize: file.size,
+        fileIv,
+        burnAfterRead,
+      });
       addToast('File sent!', 'success');
-    } catch (err) { addToast(err.message || 'Failed to send file', 'error'); throw err; }
+    } catch (err) { addToast(err.message || 'Failed to send file', 'error'); }
   }, [keyLoaded, room?.id, encryptFileHook, encrypt, sendMessage, userId, addToast]);
 
+  // Download file with real cryptoKey
   const handleDownloadFile = useCallback(async (message) => {
+    if (!cryptoKey) { addToast('Encryption key not ready', 'error'); return; }
     try {
       addToast('Downloading & decrypting…', 'info');
-      await downloadFile(message.file_url, message.iv, null, message.file_name);
+      const fileIv = message.file_iv || message.iv;
+      await downloadFile(message.file_url, fileIv, cryptoKey, message.file_name);
     } catch (err) { addToast(err.message || 'Download failed', 'error'); }
-  }, [downloadFile, addToast]);
+  }, [downloadFile, cryptoKey, addToast]);
 
   const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
   const handleDragLeave = (e) => { e.preventDefault(); if (!e.currentTarget.contains(e.relatedTarget)) setIsDragging(false); };
@@ -206,8 +272,8 @@ export default function ChatPage() {
 
   if (roomError) return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px', padding: '24px', textAlign: 'center' }}>
-      <div style={{ width: 56, height: 56, borderRadius: '12px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <AlertTriangle size={26} color="var(--warning)" />
+      <div style={{ width: 56, height: 56, borderRadius: '12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <AlertTriangle size={26} color="var(--danger)" />
       </div>
       <div>
         <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text)', marginBottom: '6px' }}>{roomError}</h2>
@@ -247,7 +313,6 @@ export default function ChatPage() {
               This room uses end-to-end encryption. The decryption key is embedded in the full invite link — it is never stored on the server.
             </p>
           </div>
-
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '320px' }}>
             <button className="btn-primary" onClick={handlePasteLink}>
               Paste Full Invite Link
@@ -264,6 +329,7 @@ export default function ChatPage() {
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' }}>
       <Header />
+      <ScreenshotGuard />
 
       {/* Main chat layout */}
       <div
@@ -290,7 +356,7 @@ export default function ChatPage() {
               </div>
               <div>
                 <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '15px', fontWeight: 700, color: 'var(--text)', letterSpacing: '0.06em' }}>{roomCode}</p>
-                <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>E2E Encrypted</p>
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>E2E Encrypted{!countdown.isOnline ? ' · Offline Mode' : ''}</p>
               </div>
             </div>
           </div>
@@ -302,6 +368,20 @@ export default function ChatPage() {
 
           {/* Right actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Mute toggle */}
+            <button
+              onClick={toggleMute}
+              title={isMuted ? 'Unmute notifications' : 'Mute notifications'}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '8px', cursor: 'pointer',
+                background: isMuted ? 'rgba(239,68,68,0.12)' : 'var(--surface-2)',
+                border: isMuted ? '1px solid rgba(239,68,68,0.35)' : '1px solid var(--border)',
+                color: isMuted ? 'var(--danger)' : 'var(--text-muted)', fontSize: '12px'
+              }}
+            >
+              {isMuted ? <BellOff size={14} /> : <Bell size={14} />}
+            </button>
+
             <button
               onClick={() => setShowQR(true)}
               style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '13px', fontWeight: 600 }}
@@ -312,7 +392,7 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Top Active Voting Banner (visible to all members in room) */}
+        {/* Extension Vote Banner */}
         {room && (
           <ExtendVoteBanner
             roomId={room.id}
@@ -322,14 +402,32 @@ export default function ChatPage() {
           />
         )}
 
-        {/* Low timer warning banner (< 30s) */}
-        {countdown.isUnder30Sec && (
+        {/* Grace Period Banner */}
+        {showGraceBanner && countdown.inGracePeriod && (
           <div style={{
-            background: 'rgba(239,68,68,0.15)',
-            borderBottom: '1px solid rgba(239,68,68,0.4)',
-            padding: '8px 16px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            gap: '12px', zIndex: 25
+            background: 'rgba(239,68,68,0.12)', borderBottom: '1px solid rgba(239,68,68,0.4)',
+            padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', zIndex: 25
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertTriangle size={15} color="var(--danger)" />
+              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--danger)' }}>
+                ⏳ Room expired — 30s grace period. Room ends in {countdown.graceSecondsLeft}s…
+              </span>
+            </div>
+            <button
+              onClick={() => setShowExtendVote(true)}
+              style={{ background: 'var(--danger)', color: '#fff', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+            >
+              + Extend
+            </button>
+          </div>
+        )}
+
+        {/* Low timer warning banner (< 30s, still counting down) */}
+        {countdown.isUnder30Sec && !countdown.inGracePeriod && (
+          <div style={{
+            background: 'rgba(239,68,68,0.15)', borderBottom: '1px solid rgba(239,68,68,0.4)',
+            padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', zIndex: 25
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <AlertTriangle size={15} color="var(--danger)" />
@@ -339,14 +437,17 @@ export default function ChatPage() {
             </div>
             <button
               onClick={() => setShowExtendVote(true)}
-              style={{
-                background: 'var(--danger)', color: '#fff', border: 'none',
-                borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: 700,
-                cursor: 'pointer'
-              }}
+              style={{ background: 'var(--danger)', color: '#fff', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
             >
               + Extend Time
             </button>
+          </div>
+        )}
+
+        {/* Offline indicator */}
+        {!countdown.isOnline && (
+          <div style={{ background: 'rgba(239,68,68,0.1)', borderBottom: '1px solid rgba(239,68,68,0.3)', padding: '6px 16px', textAlign: 'center', fontSize: '12px', color: 'var(--danger)', fontWeight: 600 }}>
+            📵 You are offline — countdown continues locally. Messages will self-destruct on schedule.
           </div>
         )}
 
@@ -354,7 +455,7 @@ export default function ChatPage() {
         <DragDropZone isDragging={isDragging} />
 
         {/* Messages */}
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingTop: '16px', paddingBottom: '8px' }}>
+        <div className="chat-messages-area" style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingTop: '16px', paddingBottom: '8px' }}>
           {messagesLoading ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
               <LoadingSpinner text="Loading messages…" />
@@ -408,7 +509,7 @@ export default function ChatPage() {
         />
       )}
 
-      {/* Thanos snap — redirects to Dashboard page (/dashboard) upon completion */}
+      {/* Thanos snap — redirects to Dashboard after disintegration */}
       <ThanosSnap isExpired={snapTriggered} onRedirect={() => window.location.href = '/dashboard'} />
     </div>
   );

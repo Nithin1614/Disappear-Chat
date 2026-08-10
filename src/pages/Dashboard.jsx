@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Copy, User, Plus, LogIn, Search } from 'lucide-react';
+import { Copy, User, Plus, LogIn, Search, Flame } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { useToast } from '../context/ToastContext';
 import Header from '../components/ui/Header';
@@ -7,6 +7,7 @@ import CreateRoom from '../components/room/CreateRoom';
 import JoinRoom from '../components/room/JoinRoom';
 import UserSearch from '../components/auth/UserSearch';
 import ChatRequestsNotifier from '../components/auth/ChatRequestsNotifier';
+import CreateSecretLink from '../components/auth/CreateSecretLink';
 
 const Section = ({ title, icon: Icon, children }) => (
   <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
@@ -43,13 +44,13 @@ export default function Dashboard() {
 
       <main style={{ maxWidth: '960px', margin: '0 auto', padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-        {/* Real-time Incoming Chat Requests Notifier */}
+        {/* Real-time Incoming Chat Requests */}
         <ChatRequestsNotifier userId={userId} />
 
         {/* User Card */}
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ width: 48, height: 48, borderRadius: '12px', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <User size={22} color="#08090d" />
+            <User size={22} color="#fff" />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -60,7 +61,7 @@ export default function Dashboard() {
                 <Copy size={15} />
               </button>
             </div>
-            <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>ID: {userId}</p>
+            <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>ID: {userId} · Identity expires in 24h</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)' }} />
@@ -85,6 +86,13 @@ export default function Dashboard() {
               Search by User ID to send an instant encrypted direct chat request.
             </p>
             <UserSearch />
+          </div>
+        </Section>
+
+        {/* Self-destruct link */}
+        <Section title="Self-Destruct Secret Link" icon={Flame}>
+          <div style={{ maxWidth: '500px' }}>
+            <CreateSecretLink />
           </div>
         </Section>
 

@@ -3,7 +3,7 @@
 
 @import "tailwindcss";
 
-/* ===== Design Tokens — Modern Dark (Amber Gold Accent) ===== */
+/* ===== Design Tokens — Modern Dark (Emerald Teal Accent) ===== */
 :root {
   --bg: #08090d;
   --surface: #11131c;
@@ -16,15 +16,15 @@
   --text-muted: #94a3b8;
   --text-dim: #64748b;
 
-  --accent: #f59e0b;
-  --accent-hover: #d97706;
-  --accent-dim: rgba(245, 158, 11, 0.16);
-  --accent-border: rgba(245, 158, 11, 0.4);
+  --accent: #10b981;
+  --accent-hover: #059669;
+  --accent-dim: rgba(16, 185, 129, 0.15);
+  --accent-border: rgba(16, 185, 129, 0.38);
 
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --info: #f59e0b;
+  --info: #10b981;
 
   --radius-sm: 8px;
   --radius: 12px;
@@ -32,7 +32,7 @@
   --radius-xl: 20px;
 }
 
-/* ===== Design Tokens — Light (Amber Gold Accent) ===== */
+/* ===== Design Tokens — Light (Emerald Teal Accent) ===== */
 [data-theme="light"] {
   --bg: #f8fafc;
   --surface: #ffffff;
@@ -45,15 +45,15 @@
   --text-muted: #475569;
   --text-dim: #64748b;
 
-  --accent: #d97706;
-  --accent-hover: #b45309;
-  --accent-dim: rgba(217, 119, 6, 0.12);
-  --accent-border: rgba(217, 119, 6, 0.35);
+  --accent: #059669;
+  --accent-hover: #047857;
+  --accent-dim: rgba(5, 150, 105, 0.1);
+  --accent-border: rgba(5, 150, 105, 0.3);
 
   --success: #16a34a;
   --warning: #d97706;
   --danger: #dc2626;
-  --info: #d97706;
+  --info: #059669;
 }
 
 /* ===== Reset ===== */
@@ -84,7 +84,7 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 /* ===== Selection ===== */
-::selection { background: rgba(245, 158, 11, 0.3); }
+::selection { background: rgba(16, 185, 129, 0.28); }
 
 /* ===== Focus ===== */
 input:focus, textarea:focus, button:focus-visible {
@@ -148,6 +148,11 @@ input[type="range"]::-webkit-slider-thumb {
   40%           { transform: translateY(-6px); }
 }
 
+@keyframes flash-black {
+  0%, 100% { opacity: 0; }
+  50%      { opacity: 1; }
+}
+
 /* ===== Utility ===== */
 .card {
   background: var(--surface);
@@ -157,7 +162,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 .btn-primary {
   background: var(--accent);
-  color: #08090d;
+  color: #ffffff;
   border: none;
   border-radius: var(--radius-sm);
   padding: 12px 20px;
@@ -171,7 +176,7 @@ input[type="range"]::-webkit-slider-thumb {
   gap: 8px;
   width: 100%;
 }
-.btn-primary:hover:not(:disabled) { background: var(--accent-hover); color: #ffffff; }
+.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
 .btn-primary:active:not(:disabled) { transform: scale(0.98); }
 .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
@@ -242,4 +247,14 @@ input[type="range"]::-webkit-slider-thumb {
 .toast-bg {
   background: var(--surface-2) !important;
   border: 1px solid var(--border) !important;
+}
+
+/* ===== Screenshot deterrent ===== */
+.screenshot-flash {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 99999;
+  pointer-events: none;
+  animation: flash-black 0.4s ease forwards;
 }

@@ -10,43 +10,51 @@ export function usePresence(roomId, userId, displayName = '') {
   const [typingUsers, setTypingUsers] = useState([]);
   const channelRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const isSubscribedRef = useRef(false);
 
   useEffect(() => {
     if (!roomId || !userId) return;
+
+    isSubscribedRef.current = false;
 
     const channel = supabase.channel(`presence:${roomId}`, {
       config: { presence: { key: userId } },
     });
 
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState();
-        const members = [];
-        const typing = [];
+    const syncState = () => {
+      const state = channel.presenceState();
+      const members = [];
+      const typing = [];
 
-        Object.entries(state).forEach(([key, presences]) => {
-          if (presences && presences.length > 0) {
-            const latest = presences[presences.length - 1];
-            members.push({
+      Object.entries(state).forEach(([key, presences]) => {
+        if (presences && presences.length > 0) {
+          const latest = presences[presences.length - 1];
+          members.push({
+            user_id: key,
+            display_name: latest.display_name || key,
+            is_online: true,
+            is_typing: latest.is_typing || false,
+          });
+          if (latest.is_typing && key !== userId) {
+            typing.push({
               user_id: key,
               display_name: latest.display_name || key,
-              is_online: true,
-              is_typing: latest.is_typing || false,
             });
-            if (latest.is_typing && key !== userId) {
-              typing.push({
-                user_id: key,
-                display_name: latest.display_name || key,
-              });
-            }
           }
-        });
+        }
+      });
 
-        setOnlineMembers(members);
-        setTypingUsers(typing);
-      })
+      setOnlineMembers(members);
+      setTypingUsers(typing);
+    };
+
+    channel
+      .on('presence', { event: 'sync' }, syncState)
+      .on('presence', { event: 'join' }, syncState)
+      .on('presence', { event: 'leave' }, syncState)
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
           await channel.track({
             user_id: userId,
             display_name: displayName || userId,
@@ -60,6 +68,7 @@ export function usePresence(roomId, userId, displayName = '') {
     channelRef.current = channel;
 
     return () => {
+      isSubscribedRef.current = false;
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
@@ -73,9 +82,9 @@ export function usePresence(roomId, userId, displayName = '') {
 
   const trackTyping = useCallback(
     (isTyping) => {
-      if (!channelRef.current) return;
+      // Guard: only track if channel is subscribed
+      if (!channelRef.current || !isSubscribedRef.current) return;
 
-      // Clear existing timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
         typingTimeoutRef.current = null;
@@ -88,10 +97,9 @@ export function usePresence(roomId, userId, displayName = '') {
         is_online: true,
       });
 
-      // Auto-stop typing after 3 seconds
       if (isTyping) {
         typingTimeoutRef.current = setTimeout(() => {
-          if (channelRef.current) {
+          if (channelRef.current && isSubscribedRef.current) {
             channelRef.current.track({
               user_id: userId,
               display_name: displayName || userId,

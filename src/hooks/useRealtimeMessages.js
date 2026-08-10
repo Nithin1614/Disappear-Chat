@@ -41,12 +41,10 @@ export function useRealtimeMessages(roomId) {
 
     fetchMessages();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [roomId]);
 
-  // Subscribe to real-time inserts
+  // Subscribe to real-time inserts and updates
   useEffect(() => {
     if (!roomId) return;
 
@@ -54,34 +52,29 @@ export function useRealtimeMessages(roomId) {
       .channel(`messages:${roomId}`)
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `room_id=eq.${roomId}`,
-        },
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` },
         (payload) => {
           setMessages((prev) => {
-            // Avoid duplicates (might already be in the list from optimistic insert)
-            if (prev.some((m) => m.id === payload.new.id)) {
-              return prev;
-            }
+            if (prev.some((m) => m.id === payload.new.id)) return prev;
             return [...prev, payload.new];
           });
         }
       )
       .on(
         'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'messages',
-          filter: `room_id=eq.${roomId}`,
-        },
+        { event: 'UPDATE', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` },
         (payload) => {
           setMessages((prev) =>
             prev.map((m) => (m.id === payload.new.id ? payload.new : m))
           );
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` },
+        (payload) => {
+          // Remove burn-after-read messages when deleted
+          setMessages((prev) => prev.filter((m) => m.id !== payload.old.id));
         }
       )
       .subscribe();
@@ -97,7 +90,17 @@ export function useRealtimeMessages(roomId) {
   }, [roomId]);
 
   const sendMessage = useCallback(
-    async ({ encryptedContent, iv, type = 'text', senderId, fileUrl = null, fileName = null, fileSize = null, fileIv = null }) => {
+    async ({
+      encryptedContent,
+      iv,
+      type = 'text',
+      senderId,
+      fileUrl = null,
+      fileName = null,
+      fileSize = null,
+      fileIv = null,
+      burnAfterRead = false,
+    }) => {
       const { data, error: insertError } = await supabase
         .from('messages')
         .insert({
@@ -110,15 +113,13 @@ export function useRealtimeMessages(roomId) {
           file_name: fileName,
           file_size: fileSize,
           file_iv: fileIv || iv,
+          burn_after_read: burnAfterRead,
           is_read: false,
         })
         .select()
         .single();
 
-      if (insertError) {
-        throw new Error(insertError.message);
-      }
-
+      if (insertError) throw new Error(insertError.message);
       return data;
     },
     [roomId]

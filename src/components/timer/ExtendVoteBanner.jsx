@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Clock, Check, X, ThumbsUp } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../context/ToastContext';
@@ -10,6 +10,8 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, memberMa
   const [hasVoted, setHasVoted] = useState(false);
   const [loading, setLoading] = useState(false);
   const { addToast } = useToast();
+  // Prevent double-apply on concurrent re-renders
+  const applyingRef = useRef(false);
 
   useEffect(() => {
     if (!roomId) return;
@@ -42,13 +44,10 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, memberMa
     return () => { supabase.removeChannel(channel); };
   }, [roomId, userId]);
 
-  useEffect(() => {
-    if (votes.length > 0 && memberCount > 0 && votes.length >= memberCount) {
-      handleApplyExtension();
-    }
-  }, [votes, memberCount]);
-
-  const handleApplyExtension = async () => {
+  // Apply extension only when EXPLICITLY called — not auto-fired
+  const applyExtension = async (minsToAdd) => {
+    if (applyingRef.current) return;
+    applyingRef.current = true;
     try {
       const { data: room } = await supabase.from('rooms').select('expires_at, duration_minutes').eq('id', roomId).single();
       if (!room) return;
@@ -56,18 +55,20 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, memberMa
       const currentExpiry = new Date(room.expires_at).getTime();
       const now = Date.now();
       const baseTime = Math.max(currentExpiry, now);
-      const newExpiry = new Date(baseTime + minutesToAdd * 60000);
+      const newExpiry = new Date(baseTime + minsToAdd * 60000);
 
       await supabase.from('rooms').update({
         expires_at: newExpiry.toISOString(),
-        duration_minutes: room.duration_minutes + minutesToAdd
+        duration_minutes: room.duration_minutes + minsToAdd
       }).eq('id', roomId);
 
       await supabase.from('extend_votes').delete().eq('room_id', roomId);
 
-      addToast(`🎉 Room timer extended by +${minutesToAdd} minutes!`, 'success');
+      addToast(`🎉 Room timer extended by +${minsToAdd} minutes!`, 'success');
     } catch (err) {
       addToast(err.message || 'Failed to extend time', 'error');
+    } finally {
+      applyingRef.current = false;
     }
   };
 
@@ -82,7 +83,19 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, memberMa
       });
       if (error) throw error;
       setHasVoted(true);
-      addToast('Vote approved!', 'success');
+      addToast('Vote cast! Waiting for all members…', 'success');
+
+      // Fetch current votes AFTER insert to check if all members have voted
+      const { data: currentVotes } = await supabase
+        .from('extend_votes')
+        .select('user_id')
+        .eq('room_id', roomId);
+
+      const totalVotes = currentVotes?.length || 0;
+      // Only apply when all members have voted — never before
+      if (totalVotes >= memberCount && memberCount > 0) {
+        await applyExtension(minutesToAdd);
+      }
     } catch (err) {
       addToast(err.message || 'Approval failed', 'error');
     } finally {
@@ -110,8 +123,8 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, memberMa
 
   return (
     <div style={{
-      background: 'rgba(245,158,11,0.12)',
-      borderBottom: '1px solid rgba(245,158,11,0.3)',
+      background: 'rgba(16,185,129,0.1)',
+      borderBottom: '1px solid rgba(16,185,129,0.3)',
       padding: '10px 16px',
       display: 'flex',
       alignItems: 'center',
@@ -123,17 +136,17 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, memberMa
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <div style={{
           width: 28, height: 28, borderRadius: '6px',
-          background: 'rgba(245,158,11,0.2)',
+          background: 'rgba(16,185,129,0.2)',
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
-          <Clock size={15} color="var(--warning)" />
+          <Clock size={15} color="var(--accent)" />
         </div>
         <div>
           <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
-            Extension Vote: <span style={{ color: 'var(--warning)' }}>+{minutesToAdd} Minutes</span>
+            Extension Vote: <span style={{ color: 'var(--accent)' }}>+{minutesToAdd} Minutes</span>
           </p>
           <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-            Requested by <span style={{ fontWeight: 600, color: 'var(--text)' }}>{requesterName}</span> · Voted: {votes.length}/{memberCount} members
+            Requested by <span style={{ fontWeight: 600, color: 'var(--text)' }}>{requesterName}</span> · Approved: {votes.length}/{memberCount}
           </p>
         </div>
       </div>
@@ -143,31 +156,36 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, memberMa
           <>
             <button
               onClick={handleApprove}
-              disabled={loading}
+              disabled={loading || isRequester}
+              title={isRequester ? 'You requested this extension' : 'Approve extension'}
               style={{
-                background: 'var(--success)', color: '#fff', border: 'none',
+                background: 'var(--accent)', color: '#fff', border: 'none',
                 borderRadius: '6px', padding: '6px 14px', fontSize: '12px', fontWeight: 600,
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                cursor: isRequester ? 'not-allowed' : 'pointer',
+                opacity: isRequester ? 0.5 : 1,
+                display: 'flex', alignItems: 'center', gap: '4px'
               }}
             >
-              <ThumbsUp size={13} /> Approve (+{minutesToAdd}m)
+              <ThumbsUp size={13} /> {isRequester ? 'Waiting for others…' : `Approve (+${minutesToAdd}m)`}
             </button>
-            <button
-              onClick={handleReject}
-              disabled={loading}
-              style={{
-                background: 'var(--surface-3)', color: 'var(--text-muted)', border: '1px solid var(--border)',
-                borderRadius: '6px', padding: '6px 10px', fontSize: '12px', fontWeight: 500,
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
-              }}
-            >
-              <X size={13} /> Reject
-            </button>
+            {!isRequester && (
+              <button
+                onClick={handleReject}
+                disabled={loading}
+                style={{
+                  background: 'var(--surface-3)', color: 'var(--text-muted)', border: '1px solid var(--border)',
+                  borderRadius: '6px', padding: '6px 10px', fontSize: '12px', fontWeight: 500,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                }}
+              >
+                <X size={13} /> Reject
+              </button>
+            )}
           </>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--success)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Check size={14} /> You Approved
+            <span style={{ fontSize: '12px', color: 'var(--accent)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Check size={14} /> You Approved — waiting for others
             </span>
             <button
               onClick={handleReject}

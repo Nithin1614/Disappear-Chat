@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-const STORAGE_KEY = 'vanishchat-sound-enabled';
+const STORAGE_SOUND_KEY = 'vanishchat-sound-enabled';
+const STORAGE_MUTED_KEY = 'vanishchat-muted';
 
 /**
  * Hook for playing notification sounds using Web Audio API.
- * Generates a gentle "ding" via oscillator — no external audio files needed.
+ * Includes mute toggle persisted to localStorage.
  */
 export function useNotificationSound() {
   const [isTabFocused, setIsTabFocused] = useState(
@@ -13,10 +14,18 @@ export function useNotificationSound() {
 
   const [soundEnabled, setSoundEnabled] = useState(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(STORAGE_SOUND_KEY);
       return stored === null ? true : stored === 'true';
     } catch {
       return true;
+    }
+  });
+
+  const [isMuted, setIsMuted] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_MUTED_KEY) === 'true';
+    } catch {
+      return false;
     }
   });
 
@@ -26,7 +35,6 @@ export function useNotificationSound() {
     const handleVisibility = () => {
       setIsTabFocused(document.visibilityState === 'visible');
     };
-
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
@@ -34,20 +42,23 @@ export function useNotificationSound() {
   const toggleSound = useCallback(() => {
     setSoundEnabled((prev) => {
       const next = !prev;
-      try {
-        localStorage.setItem(STORAGE_KEY, String(next));
-      } catch {
-        // ignore
-      }
+      try { localStorage.setItem(STORAGE_SOUND_KEY, String(next)); } catch {}
+      return next;
+    });
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    setIsMuted((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(STORAGE_MUTED_KEY, String(next)); } catch {}
       return next;
     });
   }, []);
 
   const playSound = useCallback(() => {
-    if (!soundEnabled) return;
+    if (!soundEnabled || isMuted) return;
 
     try {
-      // Lazy-init AudioContext (must be done after user gesture)
       if (!audioCtxRef.current) {
         audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
       }
@@ -55,7 +66,6 @@ export function useNotificationSound() {
       const ctx = audioCtxRef.current;
       const currentTime = ctx.currentTime;
 
-      // Create a gentle ding — two quick tones
       const oscillator = ctx.createOscillator();
       const gainNode = ctx.createGain();
 
@@ -75,7 +85,7 @@ export function useNotificationSound() {
     } catch {
       // Audio not available
     }
-  }, [soundEnabled]);
+  }, [soundEnabled, isMuted]);
 
-  return { playSound, isTabFocused, soundEnabled, toggleSound };
+  return { playSound, isTabFocused, soundEnabled, toggleSound, isMuted, toggleMute };
 }

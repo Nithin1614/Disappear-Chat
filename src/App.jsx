@@ -7,6 +7,7 @@ import Toast from './components/ui/Toast';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import ChatPage from './pages/ChatPage';
+import SecretLinkPage from './pages/SecretLinkPage';
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/room/:roomCode" element={<ChatPage />} />
+                <Route path="/s/:token" element={<SecretLinkPage />} />
               </Routes>
               <Toast />
             </ToastProvider>

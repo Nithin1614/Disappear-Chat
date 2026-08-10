@@ -1,12 +1,40 @@
-import { Check, CheckCheck, Download, File } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Check, CheckCheck, Download, File, Flame, Eye } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 export default function MessageBubble({ message, isSender, decryptedContent, decryptedImageUrl, onDownloadFile, senderName }) {
   const isImage  = message.type === 'image';
   const isFile   = message.type === 'file';
   const isSystem = message.type === 'system';
+  const isBurn   = message.burn_after_read === true;
+
+  const [burnRevealed, setBurnRevealed] = useState(false);
+  const [burnCountdown, setBurnCountdown] = useState(null);
+  const [burnDone, setBurnDone] = useState(false);
+  const burnTimerRef = useRef(null);
 
   const fmtTime = ts => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const fmtSize = b => { if (!b) return ''; if (b < 1024) return `${b}B`; if (b < 1048576) return `${(b/1024).toFixed(1)}KB`; return `${(b/1048576).toFixed(1)}MB`; };
+
+  const handleRevealBurn = () => {
+    if (burnRevealed || isSender) return;
+    setBurnRevealed(true);
+    setBurnCountdown(5);
+    burnTimerRef.current = setInterval(() => {
+      setBurnCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(burnTimerRef.current);
+          setBurnDone(true);
+          // Delete from DB
+          supabase.from('messages').delete().eq('id', message.id).then(() => {});
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  useEffect(() => () => { if (burnTimerRef.current) clearInterval(burnTimerRef.current); }, []);
 
   if (isSystem) return (
     <div style={{ display: 'flex', justifyContent: 'center', margin: '8px 0' }}>
@@ -16,19 +44,47 @@ export default function MessageBubble({ message, isSender, decryptedContent, dec
     </div>
   );
 
+  if (burnDone) return (
+    <div style={{ display: 'flex', justifyContent: isSender ? 'flex-end' : 'flex-start', marginBottom: '8px', padding: '0 16px' }}>
+      <span style={{ fontSize: '12px', color: 'var(--text-dim)', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <Flame size={13} color="var(--danger)" /> Message self-destructed
+      </span>
+    </div>
+  );
+
   const displayName = senderName || message.sender_id;
+
+  // Burn-after-read: show locked state until recipient reveals
+  const showBurnLocked = isBurn && !isSender && !burnRevealed;
+  const showBurnCountdown = isBurn && !isSender && burnRevealed && burnCountdown !== null;
 
   return (
     <div style={{ display: 'flex', justifyContent: isSender ? 'flex-end' : 'flex-start', marginBottom: '8px', padding: '0 16px' }}>
       <div style={{
         maxWidth: '75%',
-        background: isSender ? 'var(--accent)' : 'var(--surface-2)',
+        background: isBurn
+          ? (isSender ? 'rgba(239,68,68,0.25)' : 'rgba(239,68,68,0.12)')
+          : (isSender ? 'var(--accent)' : 'var(--surface-2)'),
         color: isSender ? '#fff' : 'var(--text)',
-        border: isSender ? 'none' : '1px solid var(--border)',
+        border: isBurn
+          ? '1px solid rgba(239,68,68,0.4)'
+          : (isSender ? 'none' : '1px solid var(--border)'),
         borderRadius: isSender ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
         padding: '10px 14px',
         position: 'relative',
+        transition: 'opacity 0.3s ease',
+        opacity: showBurnCountdown && burnCountdown <= 2 ? burnCountdown / 3 : 1,
       }}>
+        {/* Burn indicator */}
+        {isBurn && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+            <Flame size={11} color="var(--danger)" />
+            <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--danger)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              {isSender ? 'Burn After Read' : (burnRevealed ? `Self-destructs in ${burnCountdown}s` : 'Tap to reveal')}
+            </span>
+          </div>
+        )}
+
         {/* Username for received messages */}
         {!isSender && displayName && (
           <p style={{ fontSize: '11px', fontWeight: 600, color: 'var(--accent)', marginBottom: '4px' }}>
@@ -36,37 +92,60 @@ export default function MessageBubble({ message, isSender, decryptedContent, dec
           </p>
         )}
 
-        {/* Image */}
-        {isImage && decryptedImageUrl && (
-          <img src={decryptedImageUrl} alt="Shared" style={{ maxWidth: '100%', maxHeight: '240px', borderRadius: '8px', display: 'block', marginBottom: '6px', cursor: 'pointer' }}
-            onClick={() => window.open(decryptedImageUrl, '_blank')} />
-        )}
+        {/* Burn locked state */}
+        {showBurnLocked ? (
+          <button
+            onClick={handleRevealBurn}
+            style={{
+              background: 'rgba(239,68,68,0.15)', border: '1px dashed rgba(239,68,68,0.5)',
+              borderRadius: '8px', padding: '14px 20px', cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+              width: '100%', color: 'var(--danger)'
+            }}
+          >
+            <Eye size={20} />
+            <span style={{ fontSize: '12px', fontWeight: 600 }}>Tap to reveal — message will self-destruct</span>
+          </button>
+        ) : (
+          <>
+            {/* Image */}
+            {isImage && decryptedImageUrl && (
+              <img src={decryptedImageUrl} alt="Shared" style={{ maxWidth: '100%', maxHeight: '240px', borderRadius: '8px', display: 'block', marginBottom: '6px', cursor: 'pointer' }}
+                onClick={() => window.open(decryptedImageUrl, '_blank')} />
+            )}
+            {isImage && !decryptedImageUrl && (
+              <div style={{ padding: '20px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+                🔒 Decrypting image…
+              </div>
+            )}
 
-        {/* File */}
-        {isFile && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '8px', background: isSender ? 'rgba(255,255,255,0.12)' : 'var(--surface-3)', marginBottom: '6px' }}>
-            <div style={{ width: 32, height: 32, borderRadius: '6px', background: isSender ? 'rgba(255,255,255,0.15)' : 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <File size={14} color={isSender ? '#fff' : 'var(--accent)'} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: '13px', fontWeight: 500, color: isSender ? '#fff' : 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{message.file_name || 'File'}</p>
-              <p style={{ fontSize: '11px', color: isSender ? 'rgba(255,255,255,0.6)' : 'var(--text-muted)' }}>{fmtSize(message.file_size)}</p>
-            </div>
-            <button onClick={e => { e.stopPropagation(); onDownloadFile && onDownloadFile(message); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: isSender ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)', display: 'flex', padding: '4px' }}>
-              <Download size={14} />
-            </button>
-          </div>
-        )}
+            {/* File */}
+            {isFile && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '8px', background: isSender ? 'rgba(255,255,255,0.12)' : 'var(--surface-3)', marginBottom: '6px' }}>
+                <div style={{ width: 32, height: 32, borderRadius: '6px', background: isSender ? 'rgba(255,255,255,0.15)' : 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <File size={14} color={isSender ? '#fff' : 'var(--accent)'} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: '13px', fontWeight: 500, color: isSender ? '#fff' : 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{message.file_name || 'File'}</p>
+                  <p style={{ fontSize: '11px', color: isSender ? 'rgba(255,255,255,0.6)' : 'var(--text-muted)' }}>{fmtSize(message.file_size)}</p>
+                </div>
+                <button onClick={e => { e.stopPropagation(); onDownloadFile && onDownloadFile(message); }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: isSender ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)', display: 'flex', padding: '4px' }}>
+                  <Download size={14} />
+                </button>
+              </div>
+            )}
 
-        {/* Text */}
-        {decryptedContent && (
-          <p style={{ fontSize: '14px', lineHeight: '1.5', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-            {decryptedContent}
-          </p>
-        )}
-        {!decryptedContent && !isImage && !isFile && (
-          <p style={{ fontSize: '14px', opacity: 0.4, fontStyle: 'italic' }}>Decrypting...</p>
+            {/* Text */}
+            {decryptedContent && (
+              <p style={{ fontSize: '14px', lineHeight: '1.5', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                {decryptedContent}
+              </p>
+            )}
+            {!decryptedContent && !isImage && !isFile && (
+              <p style={{ fontSize: '14px', opacity: 0.4, fontStyle: 'italic' }}>Decrypting...</p>
+            )}
+          </>
         )}
 
         {/* Footer */}
