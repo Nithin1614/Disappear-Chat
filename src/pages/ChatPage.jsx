@@ -233,6 +233,7 @@ export default function ChatPage() {
       if (data.expires_at && new Date(data.expires_at) < new Date()) { setRoomError('This room has expired.'); setRoomLoading(false); return; }
       setRoom(data);
       setRoomLoading(false);
+      try { sessionStorage.setItem('vanishchat_last_active_room', roomCode); } catch {}
       if (userId) {
         await supabase.from('room_members').upsert(
           { room_id: data.id, user_id: userId, is_online: true, display_name: displayName || userId },

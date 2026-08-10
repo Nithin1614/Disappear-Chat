@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
-import { Copy, User, Plus, LogIn, Search, Flame } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Copy, User, Plus, LogIn, Search, Flame, MessageSquare, X } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { useToast } from '../context/ToastContext';
+import { supabase } from '../lib/supabase';
 import Header from '../components/ui/Header';
 import CreateRoom from '../components/room/CreateRoom';
 import JoinRoom from '../components/room/JoinRoom';
@@ -23,10 +24,40 @@ const Section = ({ title, icon: Icon, children }) => (
 export default function Dashboard() {
   const { userId, displayName, isAuthenticated } = useUser();
   const { addToast } = useToast();
+  const [rejoinRoomCode, setRejoinRoomCode] = useState(null);
 
   useEffect(() => {
     if (!isAuthenticated) window.location.href = '/';
   }, [isAuthenticated]);
+
+  // Check if user accidentally exited an active chat room
+  useEffect(() => {
+    const lastRoom = sessionStorage.getItem('vanishchat_last_active_room');
+    if (!lastRoom) return;
+
+    async function checkRejoin() {
+      const { data, error } = await supabase
+        .from('rooms')
+        .select('room_code, is_active, expires_at')
+        .eq('room_code', lastRoom)
+        .eq('is_active', true)
+        .single();
+
+      if (error || !data) {
+        sessionStorage.removeItem('vanishchat_last_active_room');
+        return;
+      }
+
+      if (data.expires_at && new Date(data.expires_at) < new Date()) {
+        sessionStorage.removeItem('vanishchat_last_active_room');
+        return;
+      }
+
+      setRejoinRoomCode(data.room_code);
+    }
+
+    checkRejoin();
+  }, []);
 
   if (!isAuthenticated) return null;
 
@@ -35,11 +66,73 @@ export default function Dashboard() {
     addToast('User ID copied!', 'success');
   };
 
+  const handleRejoin = () => {
+    const code = rejoinRoomCode;
+    sessionStorage.removeItem('vanishchat_last_active_room');
+    setRejoinRoomCode(null);
+    window.location.href = `/room/${code}`;
+  };
+
+  const dismissRejoin = () => {
+    sessionStorage.removeItem('vanishchat_last_active_room');
+    setRejoinRoomCode(null);
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <Header />
 
       <main style={{ maxWidth: '960px', margin: '0 auto', padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+        {/* Accidental Exit Rejoin Card */}
+        {rejoinRoomCode && (
+          <div style={{
+            background: 'var(--accent-dim)',
+            border: '1px solid var(--accent-border)',
+            borderRadius: '16px',
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '16px',
+            flexWrap: 'wrap',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: '10px',
+                background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <MessageSquare size={20} color="#fff" />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
+                  Accidentally exited your chat? Re-enter active session in Room <span style={{ color: 'var(--accent)', fontFamily: 'JetBrains Mono, monospace' }}>{rejoinRoomCode}</span>
+                </p>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  Single-use re-entry link · Clicking enter consumes this one-time re-entry.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <button
+                onClick={handleRejoin}
+                className="btn-primary"
+                style={{ width: 'auto', padding: '9px 18px', fontSize: '13px', fontWeight: 700 }}
+              >
+                Enter Chat Again
+              </button>
+              <button
+                onClick={dismissRejoin}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: '6px', display: 'flex' }}
+                title="Dismiss"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* User Card */}
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
