@@ -1,6 +1,6 @@
 import { Check, CheckCheck, Download, File } from 'lucide-react';
 
-export default function MessageBubble({ message, isSender, decryptedContent, decryptedImageUrl, onDownloadFile }) {
+export default function MessageBubble({ message, isSender, decryptedContent, decryptedImageUrl, onDownloadFile, senderName }) {
   const isImage  = message.type === 'image';
   const isFile   = message.type === 'file';
   const isSystem = message.type === 'system';
@@ -16,10 +16,12 @@ export default function MessageBubble({ message, isSender, decryptedContent, dec
     </div>
   );
 
+  const displayName = senderName || message.sender_id;
+
   return (
     <div style={{ display: 'flex', justifyContent: isSender ? 'flex-end' : 'flex-start', marginBottom: '8px', padding: '0 16px' }}>
       <div style={{
-        maxWidth: '70%',
+        maxWidth: '75%',
         background: isSender ? 'var(--accent)' : 'var(--surface-2)',
         color: isSender ? '#fff' : 'var(--text)',
         border: isSender ? 'none' : '1px solid var(--border)',
@@ -27,9 +29,11 @@ export default function MessageBubble({ message, isSender, decryptedContent, dec
         padding: '10px 14px',
         position: 'relative',
       }}>
-        {/* Sender ID for received messages */}
-        {!isSender && message.sender_id && (
-          <p style={{ fontSize: '11px', fontFamily: 'JetBrains Mono, monospace', color: 'var(--accent)', marginBottom: '4px', opacity: 0.8 }}>{message.sender_id}</p>
+        {/* Username for received messages */}
+        {!isSender && displayName && (
+          <p style={{ fontSize: '11px', fontWeight: 600, color: 'var(--accent)', marginBottom: '4px' }}>
+            {displayName}
+          </p>
         )}
 
         {/* Image */}

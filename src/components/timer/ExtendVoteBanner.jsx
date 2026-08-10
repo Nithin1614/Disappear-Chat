@@ -3,7 +3,7 @@ import { Clock, Check, X, ThumbsUp } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../context/ToastContext';
 
-export default function ExtendVoteBanner({ roomId, userId, memberCount, onClose }) {
+export default function ExtendVoteBanner({ roomId, userId, memberCount, memberMap = {} }) {
   const [votes, setVotes] = useState([]);
   const [minutesToAdd, setMinutesToAdd] = useState(15);
   const [requesterId, setRequesterId] = useState(null);
@@ -42,7 +42,6 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, onClose 
     return () => { supabase.removeChannel(channel); };
   }, [roomId, userId]);
 
-  // When all members vote YES -> Extend room automatically!
   useEffect(() => {
     if (votes.length > 0 && memberCount > 0 && votes.length >= memberCount) {
       handleApplyExtension();
@@ -56,7 +55,6 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, onClose 
 
       const currentExpiry = new Date(room.expires_at).getTime();
       const now = Date.now();
-      // Base time is either current expiry or now (if expired)
       const baseTime = Math.max(currentExpiry, now);
       const newExpiry = new Date(baseTime + minutesToAdd * 60000);
 
@@ -108,6 +106,7 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, onClose 
   if (!votes.length) return null;
 
   const isRequester = requesterId === userId;
+  const requesterName = memberMap[requesterId] || requesterId;
 
   return (
     <div style={{
@@ -134,7 +133,7 @@ export default function ExtendVoteBanner({ roomId, userId, memberCount, onClose 
             Extension Vote: <span style={{ color: 'var(--warning)' }}>+{minutesToAdd} Minutes</span>
           </p>
           <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-            Requested by <span style={{ fontFamily: 'JetBrains Mono, monospace', color: 'var(--text)' }}>{requesterId}</span> · Voted: {votes.length}/{memberCount} members
+            Requested by <span style={{ fontWeight: 600, color: 'var(--text)' }}>{requesterName}</span> · Voted: {votes.length}/{memberCount} members
           </p>
         </div>
       </div>

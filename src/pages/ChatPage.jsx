@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Shield, Share2, AlertTriangle, ArrowLeft, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -54,6 +54,15 @@ export default function ChatPage() {
   const { encrypt, decrypt, encryptFile: encryptFileHook, keyLoaded, error: keyError } = useEncryption(roomCode);
   const { messages, sendMessage, loading: messagesLoading } = useRealtimeMessages(room?.id);
   const { onlineMembers, typingUsers, trackTyping } = usePresence(room?.id, userId, displayName);
+
+  // Member lookup map (User ID -> Username)
+  const memberMap = useMemo(() => {
+    const map = {};
+    onlineMembers.forEach(m => {
+      map[m.user_id] = m.display_name || m.user_id;
+    });
+    return map;
+  }, [onlineMembers]);
   const countdown = useCountdown(room?.expires_at, room?.duration_minutes);
   const { playSound, isTabFocused } = useNotificationSound();
   const { downloadFile } = useFileUpload(room?.id);
@@ -310,6 +319,7 @@ export default function ChatPage() {
             roomId={room.id}
             userId={userId}
             memberCount={onlineMembers.length || 1}
+            memberMap={memberMap}
           />
         )}
 
@@ -366,6 +376,7 @@ export default function ChatPage() {
                 key={msg.id}
                 message={msg}
                 isSender={msg.sender_id === userId}
+                senderName={memberMap[msg.sender_id] || msg.sender_id}
                 decryptedContent={decryptedMessages[msg.id]}
                 decryptedImageUrl={decryptedImages[msg.id]}
                 onDownloadFile={handleDownloadFile}
@@ -398,8 +409,8 @@ export default function ChatPage() {
         />
       )}
 
-      {/* Thanos snap */}
-      <ThanosSnap isExpired={snapTriggered} onRedirect={() => navigate('/dashboard')} />
+      {/* Thanos snap — redirects to Home page (/) upon completion */}
+      <ThanosSnap isExpired={snapTriggered} onRedirect={() => navigate('/')} />
     </div>
   );
 }

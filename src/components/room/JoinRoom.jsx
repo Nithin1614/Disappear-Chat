@@ -47,22 +47,19 @@ export default function JoinRoom() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-      {/* Primary: Room Code Input */}
+      {/* Room Code Input */}
       <div>
-        <label className="label">Enter 6-Char Room Code</label>
+        <label className="label">Enter 6-Character Room Code</label>
         <input
           className="input-field font-mono"
-          style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '0.2em', fontWeight: 700 }}
+          style={{ textAlign: 'center', fontSize: '22px', letterSpacing: '0.15em', fontWeight: 700 }}
           type="text"
           value={code}
           onChange={e => setCode(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
-          placeholder="a1b2c3"
+          placeholder="ENTER CODE"
           maxLength={6}
           onKeyDown={e => e.key === 'Enter' && handleJoinByCode()}
         />
-        <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '6px' }}>
-          Enter the code provided by the room creator
-        </p>
       </div>
 
       <button className="btn-primary" onClick={handleJoinByCode} disabled={loading || code.length < 6}>
@@ -77,7 +74,6 @@ export default function JoinRoom() {
         <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
       </div>
 
-      {/* Secondary: Paste full link */}
       <button className="btn-ghost" onClick={handlePasteLink} style={{ gap: '8px' }}>
         <LinkIcon size={15} /> Paste Invite Link from Clipboard
       </button>
