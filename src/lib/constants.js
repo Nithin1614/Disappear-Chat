@@ -15,7 +15,7 @@ export const MAX_GROUP_MEMBERS = 10;
 
 export const TYPING_TIMEOUT_MS = 3000;
 export const READ_RECEIPT_BATCH_INTERVAL_MS = 2000;
-export const TIMER_WARNING_SECONDS = 60;
+export const TIMER_WARNING_SECONDS = 30;
 
 export const SUPPORTED_IMAGE_TYPES = [
   'image/jpeg',

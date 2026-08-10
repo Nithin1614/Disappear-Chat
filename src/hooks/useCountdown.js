@@ -54,7 +54,8 @@ export function useCountdown(expiresAt, durationMinutes = 0) {
         : 0;
 
     const isUrgent = percentage < 25;
-    const isCritical = totalSeconds < 60;
+    const isCritical = totalSeconds <= 30;
+    const isUnder30Sec = totalSeconds > 0 && totalSeconds <= 30;
     const isExpired = totalSeconds <= 0;
 
     const pad = (n) => String(n).padStart(2, '0');
@@ -68,6 +69,7 @@ export function useCountdown(expiresAt, durationMinutes = 0) {
       percentage,
       isUrgent,
       isCritical,
+      isUnder30Sec,
       isExpired,
       formatted,
       timerStarted: true,

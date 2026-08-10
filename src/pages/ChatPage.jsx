@@ -132,11 +132,11 @@ export default function ChatPage() {
     return () => clearTimeout(t);
   }, [messages, room?.id, userId]);
 
-  // Warning toast
+  // Warning toast (< 30 seconds)
   useEffect(() => {
     if (countdown.timerStarted && countdown.totalSeconds <= TIMER_WARNING_SECONDS && countdown.totalSeconds > 0 && !warningShown) {
       setWarningShown(true);
-      addToast('⚠️ Less than 1 minute remaining!', 'warning');
+      addToast('🚨 LESS THAN 30 SECONDS REMAINING!', 'warning');
     }
   }, [countdown, warningShown, addToast]);
 
@@ -311,6 +311,34 @@ export default function ChatPage() {
             userId={userId}
             memberCount={onlineMembers.length || 1}
           />
+        )}
+
+        {/* Low timer warning banner (< 30s) */}
+        {countdown.isUnder30Sec && (
+          <div style={{
+            background: 'rgba(239,68,68,0.15)',
+            borderBottom: '1px solid rgba(239,68,68,0.4)',
+            padding: '8px 16px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: '12px', zIndex: 25
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertTriangle size={15} color="var(--danger)" />
+              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--danger)' }}>
+                🚨 Warning: Less than 30 seconds remaining! Room will self-destruct soon.
+              </span>
+            </div>
+            <button
+              onClick={() => setShowExtendVote(true)}
+              style={{
+                background: 'var(--danger)', color: '#fff', border: 'none',
+                borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              + Extend Time
+            </button>
+          </div>
         )}
 
         {/* Drag-drop zone */}
