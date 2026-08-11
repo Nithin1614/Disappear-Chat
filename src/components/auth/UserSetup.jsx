@@ -26,7 +26,7 @@ export default function UserSetup() {
       const { data: existing } = await supabase.from('users').select('user_id').eq('user_id', generatedId).single();
       if (existing) {
         setGeneratedId(generateUserId());
-        addToast('ID collision, generated a new ID. Click create again.', 'warning');
+        addToast('✨ New Identity Created! Click Get Started to enter.', 'warning');
         setLoading(false);
         return;
       }
