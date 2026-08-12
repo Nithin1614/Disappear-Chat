@@ -202,10 +202,10 @@ export default function LandingPage() {
       <footer style={{
         background: 'var(--surface)',
         borderTop: '1px solid var(--border)',
-        padding: '28px 24px',
+        padding: '40px 32px',
         width: '100%',
         zIndex: 1,
-        marginTop: 'auto'
+        marginTop: '60px'
       }}>
         <div style={{
           maxWidth: '1040px',
@@ -214,32 +214,32 @@ export default function LandingPage() {
           alignItems: 'center',
           justify: 'space-between',
           flexWrap: 'wrap',
-          gap: '20px'
+          gap: '28px'
         }}>
           {/* Brand Info */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{
-                width: 24, height: 24, borderRadius: '6px',
+                width: 26, height: 26, borderRadius: '7px',
                 background: 'var(--accent-dim)', border: '1px solid var(--accent-border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
-                <Shield size={14} color="var(--accent)" />
+                <Shield size={15} color="var(--accent)" />
               </div>
-              <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+              <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
                 VanishChat
               </span>
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
               Private Messaging. Zero History. E2E Encrypted.
             </p>
           </div>
 
-          {/* Nav Links: Terms, Privacy, About */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+          {/* Nav Links: About, Terms, Privacy */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '36px', flexWrap: 'wrap' }}>
             <button
               onClick={() => setActiveModal('about')}
-              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'color 0.15s' }}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'color 0.15s', padding: '4px 0' }}
               onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
               onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
             >
@@ -247,7 +247,7 @@ export default function LandingPage() {
             </button>
             <button
               onClick={() => setActiveModal('privacy')}
-              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'color 0.15s' }}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'color 0.15s', padding: '4px 0' }}
               onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
               onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
             >
@@ -255,7 +255,7 @@ export default function LandingPage() {
             </button>
             <button
               onClick={() => setActiveModal('terms')}
-              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'color 0.15s' }}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'color 0.15s', padding: '4px 0' }}
               onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
               onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
             >
