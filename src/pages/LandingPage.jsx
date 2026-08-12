@@ -135,10 +135,10 @@ export default function LandingPage() {
           <UserSetup />
         </div>
 
-        {/* SECTION 1: HOW IT WORKS (Three Steps, Three Minutes - Image 1 Reference) */}
+        {/* SECTION 1: HOW IT WORKS */}
         <div style={{ width: '100%', maxWidth: '920px', marginBottom: '72px', textAlign: 'center' }}>
           <div style={{
-            fontSize: '11px', fontWeight: 800, color: '#10b981', textTransform: 'uppercase',
+            fontSize: '11px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase',
             letterSpacing: '0.15em', marginBottom: '12px'
           }}>
             HOW IT WORKS
@@ -163,17 +163,17 @@ export default function LandingPage() {
             }}>
               <div style={{
                 position: 'absolute', top: '16px', right: '16px', width: '28px', height: '28px',
-                borderRadius: '50%', background: '#10b981', color: '#000', fontSize: '12px',
+                borderRadius: '50%', background: 'var(--accent)', color: '#fff', fontSize: '12px',
                 fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
                 01
               </div>
               <div style={{
-                width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(16,185,129,0.12)',
-                border: '1px solid rgba(16,185,129,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '56px', height: '56px', borderRadius: '16px', background: 'var(--accent-dim)',
+                border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 marginBottom: '20px'
               }}>
-                <UserPlus size={24} color="#10b981" />
+                <UserPlus size={24} color="var(--accent)" />
               </div>
               <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Create Identity</h3>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
@@ -189,17 +189,17 @@ export default function LandingPage() {
             }}>
               <div style={{
                 position: 'absolute', top: '16px', right: '16px', width: '28px', height: '28px',
-                borderRadius: '50%', background: '#10b981', color: '#000', fontSize: '12px',
+                borderRadius: '50%', background: 'var(--accent)', color: '#fff', fontSize: '12px',
                 fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
                 02
               </div>
               <div style={{
-                width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(139,92,246,0.12)',
-                border: '1px solid rgba(139,92,246,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '56px', height: '56px', borderRadius: '16px', background: 'var(--cyan-dim)',
+                border: '1px solid rgba(6,182,212,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 marginBottom: '20px'
               }}>
-                <Link2 size={24} color="#a855f7" />
+                <Link2 size={24} color="var(--cyan)" />
               </div>
               <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Share Secret Room</h3>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
@@ -215,7 +215,7 @@ export default function LandingPage() {
             }}>
               <div style={{
                 position: 'absolute', top: '16px', right: '16px', width: '28px', height: '28px',
-                borderRadius: '50%', background: '#10b981', color: '#000', fontSize: '12px',
+                borderRadius: '50%', background: 'var(--accent)', color: '#fff', fontSize: '12px',
                 fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
                 03
@@ -236,10 +236,10 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* SECTION 2: FEATURES (Everything you need. Nothing you don't - Image 3 Reference) */}
+        {/* SECTION 2: FEATURES */}
         <div style={{ width: '100%', maxWidth: '920px', marginBottom: '72px', textAlign: 'center' }}>
           <div style={{
-            fontSize: '11px', fontWeight: 800, color: '#10b981', textTransform: 'uppercase',
+            fontSize: '11px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase',
             letterSpacing: '0.15em', marginBottom: '12px'
           }}>
             FEATURES
@@ -260,8 +260,8 @@ export default function LandingPage() {
               background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
               boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
             }}>
-              <div style={{ width: 42, height: 42, borderRadius: '12px', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
-                <KeyRound size={20} color="#10b981" />
+              <div style={{ width: 42, height: 42, borderRadius: '12px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                <KeyRound size={20} color="var(--accent)" />
               </div>
               <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>AES-256-GCM Encryption</h3>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
@@ -274,8 +274,8 @@ export default function LandingPage() {
               background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
               boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
             }}>
-              <div style={{ width: 42, height: 42, borderRadius: '12px', background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
-                <ShieldCheck size={20} color="#a855f7" />
+              <div style={{ width: 42, height: 42, borderRadius: '12px', background: 'var(--cyan-dim)', border: '1px solid rgba(6,182,212,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                <ShieldCheck size={20} color="var(--cyan)" />
               </div>
               <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Forward Secrecy</h3>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
@@ -302,7 +302,7 @@ export default function LandingPage() {
               background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
               boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
             }}>
-              <div style={{ width: 42, height: 42, borderRadius: '12px', background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+              <div style={{ width: 42, height: 42, borderRadius: '12px', background: 'var(--cyan-dim)', border: '1px solid rgba(6,182,212,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
                 <EyeOff size={20} color="var(--cyan)" />
               </div>
               <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Screenshot Guard</h3>
@@ -316,8 +316,8 @@ export default function LandingPage() {
               background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
               boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
             }}>
-              <div style={{ width: 42, height: 42, borderRadius: '12px', background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
-                <Copy size={20} color="#eab308" />
+              <div style={{ width: 42, height: 42, borderRadius: '12px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                <Copy size={20} color="var(--accent)" />
               </div>
               <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Clipboard Auto-Clear</h3>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
@@ -330,7 +330,7 @@ export default function LandingPage() {
               background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
               boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
             }}>
-              <div style={{ width: 42, height: 42, borderRadius: '12px', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+              <div style={{ width: 42, height: 42, borderRadius: '12px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
                 <Maximize2 size={20} color="var(--accent)" />
               </div>
               <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Access Lock Overlay</h3>
@@ -341,10 +341,10 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* SECTION 3: USE CASES (Built for every team - Image 2 Reference) */}
+        {/* SECTION 3: USE CASES */}
         <div style={{ width: '100%', maxWidth: '920px', marginBottom: '72px', textAlign: 'center' }}>
           <div style={{
-            fontSize: '11px', fontWeight: 800, color: '#10b981', textTransform: 'uppercase',
+            fontSize: '11px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase',
             letterSpacing: '0.15em', marginBottom: '12px'
           }}>
             USE CASES
@@ -368,8 +368,8 @@ export default function LandingPage() {
               background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
               boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
             }}>
-              <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
-                <Briefcase size={18} color="#10b981" />
+              <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                <Briefcase size={18} color="var(--accent)" />
               </div>
               <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Confidential Business</h3>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
@@ -382,8 +382,8 @@ export default function LandingPage() {
               background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
               boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
             }}>
-              <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
-                <Key size={18} color="#a855f7" />
+              <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'var(--cyan-dim)', border: '1px solid rgba(6,182,212,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                <Key size={18} color="var(--cyan)" />
               </div>
               <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Personal Secret Links</h3>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
@@ -396,8 +396,8 @@ export default function LandingPage() {
               background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
               boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
             }}>
-              <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
-                <Image size={18} color="var(--cyan)" />
+              <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                <Image size={18} color="var(--accent)" />
               </div>
               <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Ephemeral Media</h3>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
@@ -410,8 +410,8 @@ export default function LandingPage() {
               background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
               boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
             }}>
-              <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
-                <Users size={18} color="#eab308" />
+              <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'var(--cyan-dim)', border: '1px solid rgba(6,182,212,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                <Users size={18} color="var(--cyan)" />
               </div>
               <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Temporary Collaborations</h3>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
@@ -421,12 +421,12 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* SECTION 4: CALLOUT BANNER (The private messaging your chats deserve - Image 5 Reference) */}
+        {/* SECTION 4: CALLOUT BANNER (Purple & Cyan Design Theme) */}
         <div style={{
           width: '100%', maxWidth: '840px', marginBottom: '80px', textAlign: 'center',
-          background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(139,92,246,0.15) 100%)',
-          border: '2px solid rgba(16,185,129,0.45)', borderRadius: '24px', padding: '48px 32px',
-          boxShadow: '0 16px 40px rgba(16,185,129,0.2)', position: 'relative', overflow: 'hidden'
+          background: 'linear-gradient(135deg, rgba(139,92,246,0.14) 0%, rgba(6,182,212,0.14) 100%)',
+          border: '1px solid var(--accent-border)', borderRadius: '24px', padding: '48px 32px',
+          boxShadow: '0 16px 40px rgba(139,92,246,0.2)', position: 'relative', overflow: 'hidden'
         }}>
           <h2 style={{
             fontSize: 'clamp(28px, 4.5vw, 44px)', fontWeight: 800, color: 'var(--text)',
@@ -434,8 +434,9 @@ export default function LandingPage() {
           }}>
             The private messaging your <br />
             <span style={{
-              background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 50%, #a855f7 100%)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
+              background: 'linear-gradient(135deg, #a855f7 0%, #8b5cf6 45%, #06b6d4 100%)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              filter: 'drop-shadow(0 0 25px rgba(139,92,246,0.35))'
             }}>
               conversations deserve.
             </span>
@@ -449,20 +450,17 @@ export default function LandingPage() {
             onClick={scrollToSetup}
             style={{
               padding: '14px 32px', fontSize: '15px', borderRadius: '100px',
-              background: '#10b981', color: '#000', fontWeight: 800, border: 'none',
-              boxShadow: '0 6px 20px rgba(16,185,129,0.4)', transition: 'transform 0.15s', cursor: 'pointer'
+              width: 'auto', display: 'inline-flex', alignItems: 'center', gap: '8px'
             }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.04)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
           >
             Start Chatting — Free <ArrowRight size={16} />
           </button>
         </div>
 
-        {/* SECTION 5: FREQUENTLY ASKED QUESTIONS (Accordion - Image 4 Reference) */}
+        {/* SECTION 5: FREQUENTLY ASKED QUESTIONS */}
         <div style={{ width: '100%', maxWidth: '780px' }}>
           <div style={{
-            fontSize: '11px', fontWeight: 800, color: '#10b981', textTransform: 'uppercase',
+            fontSize: '11px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase',
             letterSpacing: '0.15em', textAlign: 'center', marginBottom: '8px'
           }}>
             FAQ
