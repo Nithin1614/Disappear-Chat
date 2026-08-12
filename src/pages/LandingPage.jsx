@@ -1,10 +1,12 @@
-import { ShieldCheck, Flame, LockKeyhole, ArrowRight, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { ShieldCheck, Flame, LockKeyhole, ArrowRight, Sparkles, Shield, FileText, Info, X } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import UserSetup from '../components/auth/UserSetup';
 import Header from '../components/ui/Header';
 
 export default function LandingPage() {
   const { isAuthenticated, userId, displayName } = useUser();
+  const [activeModal, setActiveModal] = useState(null); // 'terms' | 'privacy' | 'about' | null
 
   const handleGoToDashboard = () => {
     window.location.href = '/dashboard';
@@ -91,7 +93,7 @@ export default function LandingPage() {
           )}
         </div>
 
-        {/* Primary Call to Action: Identity Setup Box (Rendered immediately for fast onboarding!) */}
+        {/* Primary Call to Action: Identity Setup Box */}
         <div style={{ width: '100%', maxWidth: '420px', marginBottom: '48px' }}>
           <UserSetup />
         </div>
@@ -195,6 +197,139 @@ export default function LandingPage() {
         </div>
 
       </main>
+
+      {/* Footer Section */}
+      <footer style={{
+        background: 'var(--surface)',
+        borderTop: '1px solid var(--border)',
+        padding: '28px 24px',
+        width: '100%',
+        zIndex: 1,
+        marginTop: 'auto'
+      }}>
+        <div style={{
+          maxWidth: '1040px',
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          justify: 'space-between',
+          flexWrap: 'wrap',
+          gap: '20px'
+        }}>
+          {/* Brand Info */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                width: 24, height: 24, borderRadius: '6px',
+                background: 'var(--accent-dim)', border: '1px solid var(--accent-border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Shield size={14} color="var(--accent)" />
+              </div>
+              <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+                VanishChat
+              </span>
+            </div>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+              Private Messaging. Zero History. E2E Encrypted.
+            </p>
+          </div>
+
+          {/* Nav Links: Terms, Privacy, About */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+            <button
+              onClick={() => setActiveModal('about')}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'color 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+            >
+              About
+            </button>
+            <button
+              onClick={() => setActiveModal('privacy')}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'color 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+            >
+              Privacy Policy
+            </button>
+            <button
+              onClick={() => setActiveModal('terms')}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'color 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+            >
+              Terms of Service
+            </button>
+          </div>
+        </div>
+      </footer>
+
+      {/* Info Modals */}
+      {activeModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: '20px'
+        }}>
+          <div style={{
+            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px',
+            maxWidth: '540px', width: '100%', padding: '28px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+            maxHeight: '85vh', overflowY: 'auto'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {activeModal === 'about' && <Info size={20} color="var(--accent)" />}
+                {activeModal === 'privacy' && <ShieldCheck size={20} color="var(--cyan)" />}
+                {activeModal === 'terms' && <FileText size={20} color="var(--success)" />}
+                <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+                  {activeModal === 'about' && 'About VanishChat'}
+                  {activeModal === 'privacy' && 'Privacy Policy'}
+                  {activeModal === 'terms' && 'Terms of Service'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setActiveModal(null)}
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '6px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {activeModal === 'about' && (
+              <div style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <p><strong style={{ color: 'var(--text)' }}>VanishChat</strong> is a zero-knowledge, self-destructing private messaging platform designed for maximum confidentiality.</p>
+                <p>Every conversation is end-to-end encrypted client-side using Web Crypto API (AES-256-GCM + PBKDF2). No plaintext, key materials, or conversation history are ever written to server disk.</p>
+                <p>VanishChat is 100% completely free and available 24/7 for everyone with no sign-ups, no user tracking, and no credit card required.</p>
+              </div>
+            )}
+
+            {activeModal === 'privacy' && (
+              <div style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <p><strong style={{ color: 'var(--text)' }}>Zero Logs & Zero Tracking:</strong> We do not log IP addresses, personal data, or message metadata.</p>
+                <p><strong style={{ color: 'var(--text)' }}>End-to-End Encryption:</strong> Encryption and decryption occur exclusively inside your browser. Encryption keys never leave your device.</p>
+                <p><strong style={{ color: 'var(--text)' }}>Automatic Destruction:</strong> All rooms, messages, and temporary files dissolve automatically upon timer expiration or 24 hours of inactivity.</p>
+              </div>
+            )}
+
+            {activeModal === 'terms' && (
+              <div style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <p><strong style={{ color: 'var(--text)' }}>Free Usage:</strong> VanishChat is offered 100% free of charge for lawful, private communication.</p>
+                <p><strong style={{ color: 'var(--text)' }}>Acceptable Use:</strong> Users are prohibited from utilizing VanishChat for illegal activities, harassment, or malicious distribution.</p>
+                <p><strong style={{ color: 'var(--text)' }}>No History Guarantee:</strong> Once a room or secret link is destroyed, data recovery is mathematically impossible.</p>
+              </div>
+            )}
+
+            <button
+              className="btn-primary"
+              onClick={() => setActiveModal(null)}
+              style={{ marginTop: '24px', width: '100%', padding: '10px' }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
