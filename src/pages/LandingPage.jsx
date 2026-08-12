@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShieldCheck, Flame, LockKeyhole, ArrowRight, Sparkles, Shield, FileText, Info, X } from 'lucide-react';
+import { ShieldCheck, Flame, LockKeyhole, ArrowRight, Sparkles, Shield, FileText, Info, X, ChevronDown } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import UserSetup from '../components/auth/UserSetup';
 import Header from '../components/ui/Header';
@@ -7,10 +7,38 @@ import Header from '../components/ui/Header';
 export default function LandingPage() {
   const { isAuthenticated, userId, displayName } = useUser();
   const [activeModal, setActiveModal] = useState(null); // 'terms' | 'privacy' | 'about' | null
+  const [openFaq, setOpenFaq] = useState(null);
 
   const handleGoToDashboard = () => {
     window.location.href = '/dashboard';
   };
+
+  const faqs = [
+    {
+      q: "How does end-to-end encryption work on VanishChat?",
+      a: "All messages, text, and files are encrypted client-side in your browser using the Web Crypto API (AES-256-GCM + PBKDF2). Servers only receive encrypted ciphertext and random IVs. Plaintext never touches our servers."
+    },
+    {
+      q: "Are room messages and files permanently deleted?",
+      a: "Yes. When a room timer expires or the room is closed, all messages, images, and files dissolve permanently from database memory. Nothing is archived or logged."
+    },
+    {
+      q: "Do I need to sign up or provide an email?",
+      a: "No. VanishChat requires zero accounts, zero emails, and zero phone numbers. Your temporary 6-character ID is generated locally and auto-wipes after 24 hours."
+    },
+    {
+      q: "Is VanishChat 100% free with no restrictions?",
+      a: "Yes! VanishChat is 100% completely free 24/7 for everyone with no subscription fees, no ads, and no credit card required."
+    },
+    {
+      q: "How do one-time view Secret Links work?",
+      a: "Secret links self-destruct immediately after being viewed once. The decryption key lives exclusively in the URL #hash fragment, which browsers never transmit to servers."
+    },
+    {
+      q: "What happens if I accidentally close or leave a room?",
+      a: "If you accidentally exit an active room, a single-use 12-second Re-Entry Card automatically appears on your Dashboard so you can instantly rejoin before the room closes."
+    }
+  ];
 
   return (
     <div style={{
@@ -33,7 +61,7 @@ export default function LandingPage() {
         padding: '24px 16px 60px', maxWidth: '1040px', margin: '0 auto', width: '100%', zIndex: 1
       }}>
 
-        {/* Hero Section Header */}
+        {/* Hero Section Header (EXACT SAME UI) */}
         <div style={{ textAlign: 'center', marginBottom: '32px', maxWidth: '680px', width: '100%' }}>
 
           {/* Badge */}
@@ -93,116 +121,97 @@ export default function LandingPage() {
           )}
         </div>
 
-        {/* Primary Call to Action: Identity Setup Box */}
+        {/* Primary Call to Action: Identity Setup Box (EXACT SAME UI) */}
         <div style={{ width: '100%', maxWidth: '420px', marginBottom: '48px' }}>
           <UserSetup />
         </div>
 
-        {/* Feature Highlights Grid — Clean, responsive 3 cards */}
+        {/* 100% Free 24/7 Highlight Banner */}
         <div style={{
-          width: '100%', maxWidth: '920px',
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px'
+          width: '100%', maxWidth: '780px',
+          background: 'linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(139,92,246,0.12) 100%)',
+          border: '1px solid rgba(16,185,129,0.4)',
+          borderRadius: '16px',
+          padding: '20px 24px',
+          boxShadow: '0 10px 30px rgba(16,185,129,0.15)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '12px',
+          textAlign: 'center',
+          marginBottom: '56px',
+          animation: 'freeBannerPulse 3.5s ease-in-out infinite'
         }}>
+          <Sparkles size={22} color="var(--success)" style={{ flexShrink: 0 }} />
+          <p style={{ fontSize: 'clamp(15px, 2vw, 18px)', fontWeight: 700, color: 'var(--text)', lineHeight: 1.4, margin: 0 }}>
+            <span style={{
+              background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 50%, #a855f7 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontWeight: 800
+            }}>
+              ✨ 100% Completely Free — 24/7 Available for Everyone.
+            </span>{' '}
+            <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>
+              No credit card, no sign-up, no restrictions.
+            </span>
+          </p>
+          <style>{`
+            @keyframes freeBannerPulse {
+              0%, 100% { transform: scale(1); boxShadow: 0 10px 30px rgba(16,185,129,0.15); borderColor: rgba(16,185,129,0.4); }
+              50% { transform: scale(1.01); boxShadow: 0 14px 38px rgba(16,185,129,0.28); borderColor: rgba(16,185,129,0.65); }
+            }
+          `}</style>
+        </div>
 
-          {/* Card 1 */}
-          <div style={{
-            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '22px 20px',
-            boxShadow: '0 10px 24px rgba(0,0,0,0.3)', transition: 'border-color 0.2s, transform 0.2s',
-            display: 'flex', flexDirection: 'column', gap: '8px'
-          }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent-border)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-          >
-            <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <LockKeyhole size={18} color="var(--accent)" />
-            </div>
-            <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginTop: '4px' }}>End-to-End Encrypted</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-              All text & files are encrypted in your browser before sending. No plaintext touches the server.
-            </p>
-          </div>
-
-          {/* Card 2 */}
-          <div style={{
-            background: 'var(--surface)', border: '1px solid var(--accent-border)', borderRadius: '16px', padding: '22px 20px',
-            boxShadow: '0 12px 28px rgba(139,92,246,0.15)', transition: 'transform 0.2s',
-            display: 'flex', flexDirection: 'column', gap: '8px'
+        {/* Sleek Accordion FAQ Section (Inspired by Reference Image 2) */}
+        <div style={{ width: '100%', maxWidth: '780px' }}>
+          <h2 style={{
+            fontSize: '22px', fontWeight: 800, color: 'var(--text)',
+            textAlign: 'center', marginBottom: '28px', letterSpacing: '-0.02em'
           }}>
-            <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Flame size={18} color="var(--danger)" />
-            </div>
-            <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginTop: '4px' }}>Self-Destruct & Burn</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-              One-time view burn messages & secret links dissolve into particles upon expiration.
-            </p>
-          </div>
+            Frequently Asked Questions
+          </h2>
 
-          {/* Card 3 */}
-          <div style={{
-            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '22px 20px',
-            boxShadow: '0 10px 24px rgba(0,0,0,0.3)', transition: 'border-color 0.2s, transform 0.2s',
-            display: 'flex', flexDirection: 'column', gap: '8px'
-          }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--cyan)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-          >
-            <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'var(--cyan-dim)', border: '1px solid rgba(6,182,212,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <ShieldCheck size={18} color="var(--cyan)" />
-            </div>
-            <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginTop: '4px' }}>24h Automatic Clean</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-              All data is deleted immediately as soon as a room is closed or expires. Temporary identities auto-wipe every 24 hours.
-            </p>
+          <div style={{ display: 'flex', flexDirection: 'column', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            {faqs.map((faq, idx) => {
+              const isOpen = openFaq === idx;
+              return (
+                <div key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                  <button
+                    onClick={() => setOpenFaq(isOpen ? null : idx)}
+                    style={{
+                      width: '100%', padding: '20px 8px', background: 'none', border: 'none',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      cursor: 'pointer', textAlign: 'left', gap: '16px'
+                    }}
+                  >
+                    <span style={{ fontSize: '16px', fontWeight: 600, color: isOpen ? 'var(--accent)' : 'var(--text)', transition: 'color 0.2s' }}>
+                      {faq.q}
+                    </span>
+                    <ChevronDown size={18} color="var(--text-muted)" style={{
+                      transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.25s ease', flexShrink: 0
+                    }} />
+                  </button>
+                  {isOpen && (
+                    <div style={{ padding: '0 8px 20px', fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                      {faq.a}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-
-          {/* Bottom Card: 100% Free 24/7 Animated Banner */}
-          <div style={{
-            gridColumn: '1 / -1',
-            background: 'linear-gradient(135deg, rgba(16,185,129,0.14) 0%, rgba(139,92,246,0.14) 100%)',
-            border: '2px solid rgba(16,185,129,0.45)',
-            borderRadius: '18px',
-            padding: '24px 28px',
-            boxShadow: '0 12px 32px rgba(16,185,129,0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '14px',
-            textAlign: 'center',
-            marginTop: '12px',
-            animation: 'freeBannerPulse 3s ease-in-out infinite'
-          }}>
-            <Sparkles size={24} color="var(--success)" style={{ flexShrink: 0 }} />
-            <p style={{ fontSize: 'clamp(16px, 2.2vw, 20px)', fontWeight: 700, color: 'var(--text)', lineHeight: 1.4, margin: 0 }}>
-              <span style={{
-                background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 50%, #a855f7 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                fontWeight: 800,
-                fontSize: 'clamp(17px, 2.4vw, 22px)'
-              }}>
-                ✨ 100% Completely Free — 24/7 Available for Everyone.
-              </span>{' '}
-              <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>
-                No credit card, no sign-up, no restrictions.
-              </span>
-            </p>
-            <style>{`
-              @keyframes freeBannerPulse {
-                0%, 100% { transform: scale(1); boxShadow: 0 12px 32px rgba(16,185,129,0.2); borderColor: rgba(16,185,129,0.45); }
-                50% { transform: scale(1.015); boxShadow: 0 16px 40px rgba(16,185,129,0.35); borderColor: rgba(16,185,129,0.7); }
-              }
-            `}</style>
-          </div>
-
         </div>
 
       </main>
 
-      {/* Footer Section */}
+      {/* Multi-Column Sleek Footer (Exact Reference Match to Image 2) */}
       <footer style={{
         background: 'var(--surface)',
         borderTop: '1px solid var(--border)',
-        padding: '40px 32px',
+        padding: '50px 24px 32px',
         width: '100%',
         zIndex: 1,
         marginTop: '60px'
@@ -210,58 +219,72 @@ export default function LandingPage() {
         <div style={{
           maxWidth: '1040px',
           margin: '0 auto',
-          display: 'flex',
-          alignItems: 'center',
-          justify: 'space-between',
-          flexWrap: 'wrap',
-          gap: '28px'
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '36px',
+          paddingBottom: '36px',
+          borderBottom: '1px solid rgba(255,255,255,0.08)'
         }}>
-          {/* Brand Info */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Column 1: Brand Info */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
               <div style={{
-                width: 26, height: 26, borderRadius: '7px',
+                width: 30, height: 30, borderRadius: '8px',
                 background: 'var(--accent-dim)', border: '1px solid var(--accent-border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
-                <Shield size={15} color="var(--accent)" />
+                <Shield size={16} color="var(--accent)" />
               </div>
-              <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+              <span style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>
                 VanishChat
               </span>
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
-              Private Messaging. Zero History. E2E Encrypted.
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+              Zero-knowledge encrypted private messaging. No logs, no history, 100% self-destructing.
             </p>
           </div>
 
-          {/* Nav Links: About, Terms, Privacy */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '36px', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => setActiveModal('about')}
-              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'color 0.15s', padding: '4px 0' }}
-              onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-            >
-              About
-            </button>
-            <button
-              onClick={() => setActiveModal('privacy')}
-              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'color 0.15s', padding: '4px 0' }}
-              onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-            >
-              Privacy Policy
-            </button>
-            <button
-              onClick={() => setActiveModal('terms')}
-              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'color 0.15s', padding: '4px 0' }}
-              onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-            >
-              Terms of Service
-            </button>
+          {/* Column 2: Product */}
+          <div>
+            <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '16px' }}>Product</h4>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <li>
+                <button onClick={() => setActiveModal('about')} style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: '14px', cursor: 'pointer', padding: 0, transition: 'color 0.15s' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text)'}>About VanishChat</button>
+              </li>
+              <li>
+                <button onClick={() => window.location.href = '/dashboard'} style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: '14px', cursor: 'pointer', padding: 0, transition: 'color 0.15s' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text)'}>Go to Dashboard</button>
+              </li>
+              <li>
+                <button onClick={() => setActiveModal('about')} style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: '14px', cursor: 'pointer', padding: 0, transition: 'color 0.15s' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text)'}>End-to-End Encryption</button>
+              </li>
+            </ul>
           </div>
+
+          {/* Column 3: Legal */}
+          <div>
+            <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '16px' }}>Legal</h4>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <li>
+                <button onClick={() => setActiveModal('privacy')} style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: '14px', cursor: 'pointer', padding: 0, transition: 'color 0.15s' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text)'}>Privacy Policy</button>
+              </li>
+              <li>
+                <button onClick={() => setActiveModal('terms')} style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: '14px', cursor: 'pointer', padding: 0, transition: 'color 0.15s' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text)'}>Terms of Service</button>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 4: Support & Security */}
+          <div>
+            <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '16px' }}>Support</h4>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+              100% Free 24/7 Available for everyone. No credit card, no sign-up.
+            </p>
+          </div>
+        </div>
+
+        {/* Bottom Copyright Bar */}
+        <div style={{ maxWidth: '1040px', margin: '24px auto 0', textAlign: 'center', fontSize: '12px', color: 'var(--text-dim)' }}>
+          © 2026 VanishChat. All rights reserved.
         </div>
       </footer>
 
