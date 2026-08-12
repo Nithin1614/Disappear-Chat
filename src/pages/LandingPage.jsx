@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { ShieldCheck, Flame, LockKeyhole, ArrowRight, Sparkles, Shield, FileText, Info, X, ChevronDown } from 'lucide-react';
+import { 
+  ShieldCheck, Flame, LockKeyhole, ArrowRight, Sparkles, Shield, FileText, Info, X, ChevronDown,
+  UserPlus, Link2, KeyRound, EyeOff, Clock, Copy, Maximize2, Briefcase, Key, Image, Users
+} from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import UserSetup from '../components/auth/UserSetup';
 import Header from '../components/ui/Header';
@@ -13,6 +16,12 @@ export default function LandingPage() {
     window.location.href = '/dashboard';
   };
 
+  const scrollToSetup = () => {
+    const el = document.getElementById('user-setup-section');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    else window.location.href = '/dashboard';
+  };
+
   const faqs = [
     {
       q: "How does end-to-end encryption work on VanishChat?",
@@ -20,7 +29,7 @@ export default function LandingPage() {
     },
     {
       q: "Are room messages and files permanently deleted?",
-      a: "Yes. When a room timer expires or the room is closed, all messages, images, and files dissolve permanently from database memory. Nothing is archived or logged."
+      a: "Yes. When a room timer expires or the room is closed, all messages, images, and files dissolve permanently from database memory using particle disintegration. Nothing is archived or logged."
     },
     {
       q: "Do I need to sign up or provide an email?",
@@ -61,7 +70,7 @@ export default function LandingPage() {
         padding: '24px 16px 60px', maxWidth: '1040px', margin: '0 auto', width: '100%', zIndex: 1
       }}>
 
-        {/* Hero Section Header (EXACT SAME UI) */}
+        {/* Hero Section Header (EXACT SAME UI - UNTOUCHED) */}
         <div style={{ textAlign: 'center', marginBottom: '32px', maxWidth: '680px', width: '100%' }}>
 
           {/* Badge */}
@@ -121,57 +130,352 @@ export default function LandingPage() {
           )}
         </div>
 
-        {/* Primary Call to Action: Identity Setup Box (EXACT SAME UI) */}
-        <div style={{ width: '100%', maxWidth: '420px', marginBottom: '48px' }}>
+        {/* Primary Call to Action: Identity Setup Box (EXACT SAME UI - UNTOUCHED) */}
+        <div id="user-setup-section" style={{ width: '100%', maxWidth: '420px', marginBottom: '64px' }}>
           <UserSetup />
         </div>
 
-        {/* 100% Free 24/7 Highlight Banner */}
-        <div style={{
-          width: '100%', maxWidth: '780px',
-          background: 'linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(139,92,246,0.12) 100%)',
-          border: '1px solid rgba(16,185,129,0.4)',
-          borderRadius: '16px',
-          padding: '20px 24px',
-          boxShadow: '0 10px 30px rgba(16,185,129,0.15)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '12px',
-          textAlign: 'center',
-          marginBottom: '56px',
-          animation: 'freeBannerPulse 3.5s ease-in-out infinite'
-        }}>
-          <Sparkles size={22} color="var(--success)" style={{ flexShrink: 0 }} />
-          <p style={{ fontSize: 'clamp(15px, 2vw, 18px)', fontWeight: 700, color: 'var(--text)', lineHeight: 1.4, margin: 0 }}>
-            <span style={{
-              background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 50%, #a855f7 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              fontWeight: 800
+        {/* SECTION 1: HOW IT WORKS (Three Steps, Three Minutes - Image 1 Reference) */}
+        <div style={{ width: '100%', maxWidth: '920px', marginBottom: '72px', textAlign: 'center' }}>
+          <div style={{
+            fontSize: '11px', fontWeight: 800, color: '#10b981', textTransform: 'uppercase',
+            letterSpacing: '0.15em', marginBottom: '12px'
+          }}>
+            HOW IT WORKS
+          </div>
+          <h2 style={{
+            fontSize: 'clamp(26px, 4vw, 38px)', fontWeight: 800, color: 'var(--text)',
+            letterSpacing: '-0.03em', marginBottom: '40px'
+          }}>
+            Three steps. Zero history.
+          </h2>
+
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gap: '24px', position: 'relative'
+          }}>
+
+            {/* Step 1 */}
+            <div style={{
+              background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px',
+              padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+              boxShadow: '0 12px 30px rgba(0,0,0,0.35)', position: 'relative'
             }}>
-              ✨ 100% Completely Free — 24/7 Available for Everyone.
-            </span>{' '}
-            <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>
-              No credit card, no sign-up, no restrictions.
-            </span>
-          </p>
-          <style>{`
-            @keyframes freeBannerPulse {
-              0%, 100% { transform: scale(1); boxShadow: 0 10px 30px rgba(16,185,129,0.15); borderColor: rgba(16,185,129,0.4); }
-              50% { transform: scale(1.01); boxShadow: 0 14px 38px rgba(16,185,129,0.28); borderColor: rgba(16,185,129,0.65); }
-            }
-          `}</style>
+              <div style={{
+                position: 'absolute', top: '16px', right: '16px', width: '28px', height: '28px',
+                borderRadius: '50%', background: '#10b981', color: '#000', fontSize: '12px',
+                fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                01
+              </div>
+              <div style={{
+                width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(16,185,129,0.12)',
+                border: '1px solid rgba(16,185,129,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                marginBottom: '20px'
+              }}>
+                <UserPlus size={24} color="#10b981" />
+              </div>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Create Identity</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+                Enter your username to generate a 24-hour anonymous key. Zero signup or email required.
+              </p>
+            </div>
+
+            {/* Step 2 */}
+            <div style={{
+              background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px',
+              padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+              boxShadow: '0 12px 30px rgba(0,0,0,0.35)', position: 'relative'
+            }}>
+              <div style={{
+                position: 'absolute', top: '16px', right: '16px', width: '28px', height: '28px',
+                borderRadius: '50%', background: '#10b981', color: '#000', fontSize: '12px',
+                fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                02
+              </div>
+              <div style={{
+                width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(139,92,246,0.12)',
+                border: '1px solid rgba(139,92,246,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                marginBottom: '20px'
+              }}>
+                <Link2 size={24} color="#a855f7" />
+              </div>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Share Secret Room</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+                Invite your chat partner via QR code or zero-knowledge secret link.
+              </p>
+            </div>
+
+            {/* Step 3 */}
+            <div style={{
+              background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px',
+              padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+              boxShadow: '0 12px 30px rgba(0,0,0,0.35)', position: 'relative'
+            }}>
+              <div style={{
+                position: 'absolute', top: '16px', right: '16px', width: '28px', height: '28px',
+                borderRadius: '50%', background: '#10b981', color: '#000', fontSize: '12px',
+                fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                03
+              </div>
+              <div style={{
+                width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(239,68,68,0.12)',
+                border: '1px solid rgba(239,68,68,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                marginBottom: '20px'
+              }}>
+                <Flame size={24} color="var(--danger)" />
+              </div>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Auto-Disintegrate</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+                Every message and file is encrypted client-side and vanishes into particles on expiry.
+              </p>
+            </div>
+
+          </div>
         </div>
 
-        {/* Sleek Accordion FAQ Section (Inspired by Reference Image 2) */}
-        <div style={{ width: '100%', maxWidth: '780px' }}>
+        {/* SECTION 2: FEATURES (Everything you need. Nothing you don't - Image 3 Reference) */}
+        <div style={{ width: '100%', maxWidth: '920px', marginBottom: '72px', textAlign: 'center' }}>
+          <div style={{
+            fontSize: '11px', fontWeight: 800, color: '#10b981', textTransform: 'uppercase',
+            letterSpacing: '0.15em', marginBottom: '12px'
+          }}>
+            FEATURES
+          </div>
           <h2 style={{
-            fontSize: '22px', fontWeight: 800, color: 'var(--text)',
-            textAlign: 'center', marginBottom: '28px', letterSpacing: '-0.02em'
+            fontSize: 'clamp(26px, 4vw, 38px)', fontWeight: 800, color: 'var(--text)',
+            letterSpacing: '-0.03em', marginBottom: '40px'
+          }}>
+            Everything you need. Nothing you don't.
+          </h2>
+
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))',
+            gap: '20px', textAlign: 'left'
+          }}>
+            {/* Feature 1 */}
+            <div style={{
+              background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
+              boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
+            }}>
+              <div style={{ width: 42, height: 42, borderRadius: '12px', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                <KeyRound size={20} color="#10b981" />
+              </div>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>AES-256-GCM Encryption</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+                Client-side PBKDF2 room key derivation via Web Crypto API. No plaintext touches the server.
+              </p>
+            </div>
+
+            {/* Feature 2 */}
+            <div style={{
+              background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
+              boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
+            }}>
+              <div style={{ width: 42, height: 42, borderRadius: '12px', background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                <ShieldCheck size={20} color="#a855f7" />
+              </div>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Forward Secrecy</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+                Per-session ephemeral key rotation every 5 minutes prevents decryption of past messages.
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div style={{
+              background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
+              boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
+            }}>
+              <div style={{ width: 42, height: 42, borderRadius: '12px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                <Clock size={20} color="var(--danger)" />
+              </div>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Dead Man Switch</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+                7-minute total room inactivity detector auto-destroys inactive rooms silently.
+              </p>
+            </div>
+
+            {/* Feature 4 */}
+            <div style={{
+              background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
+              boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
+            }}>
+              <div style={{ width: 42, height: 42, borderRadius: '12px', background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                <EyeOff size={20} color="var(--cyan)" />
+              </div>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Screenshot Guard</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+                Visual warning overlay alerts users on screenshot attempts inside active chat rooms.
+              </p>
+            </div>
+
+            {/* Feature 5 */}
+            <div style={{
+              background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
+              boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
+            }}>
+              <div style={{ width: 42, height: 42, borderRadius: '12px', background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                <Copy size={20} color="#eab308" />
+              </div>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Clipboard Auto-Clear</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+                Automatically wipes copied chat text from device clipboard after 10 seconds.
+              </p>
+            </div>
+
+            {/* Feature 6 */}
+            <div style={{
+              background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
+              boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
+            }}>
+              <div style={{ width: 42, height: 42, borderRadius: '12px', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                <Maximize2 size={20} color="var(--accent)" />
+              </div>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Access Lock Overlay</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+                Frosted glass blur lock screen hides active chat contents after 60s of inactivity.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION 3: USE CASES (Built for every team - Image 2 Reference) */}
+        <div style={{ width: '100%', maxWidth: '920px', marginBottom: '72px', textAlign: 'center' }}>
+          <div style={{
+            fontSize: '11px', fontWeight: 800, color: '#10b981', textTransform: 'uppercase',
+            letterSpacing: '0.15em', marginBottom: '12px'
+          }}>
+            USE CASES
+          </div>
+          <h2 style={{
+            fontSize: 'clamp(26px, 4vw, 38px)', fontWeight: 800, color: 'var(--text)',
+            letterSpacing: '-0.03em', marginBottom: '12px'
+          }}>
+            Built for total privacy
+          </h2>
+          <p style={{ fontSize: '15px', color: 'var(--text-muted)', maxWidth: '540px', margin: '0 auto 40px', lineHeight: 1.5 }}>
+            Whether you're sharing sensitive keys or having quick off-the-record chats.
+          </p>
+
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gap: '20px', textAlign: 'left'
+          }}>
+            {/* Card 1 */}
+            <div style={{
+              background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
+              boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
+            }}>
+              <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                <Briefcase size={18} color="#10b981" />
+              </div>
+              <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Confidential Business</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+                Off-the-record team discussions, credential sharing, and private negotiations.
+              </p>
+            </div>
+
+            {/* Card 2 */}
+            <div style={{
+              background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
+              boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
+            }}>
+              <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                <Key size={18} color="#a855f7" />
+              </div>
+              <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Personal Secret Links</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+                Self-destructing one-time secret links for passwords, links, and private notes.
+              </p>
+            </div>
+
+            {/* Card 3 */}
+            <div style={{
+              background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
+              boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
+            }}>
+              <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                <Image size={18} color="var(--cyan)" />
+              </div>
+              <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Ephemeral Media</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+                Send encrypted images and documents that dissolve after reading.
+              </p>
+            </div>
+
+            {/* Card 4 */}
+            <div style={{
+              background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px',
+              boxShadow: '0 10px 24px rgba(0,0,0,0.3)'
+            }}>
+              <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                <Users size={18} color="#eab308" />
+              </div>
+              <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Temporary Collaborations</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+                Freelancers and project teams needing quick zero-paper-trail communication.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION 4: CALLOUT BANNER (The private messaging your chats deserve - Image 5 Reference) */}
+        <div style={{
+          width: '100%', maxWidth: '840px', marginBottom: '80px', textAlign: 'center',
+          background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(139,92,246,0.15) 100%)',
+          border: '2px solid rgba(16,185,129,0.45)', borderRadius: '24px', padding: '48px 32px',
+          boxShadow: '0 16px 40px rgba(16,185,129,0.2)', position: 'relative', overflow: 'hidden'
+        }}>
+          <h2 style={{
+            fontSize: 'clamp(28px, 4.5vw, 44px)', fontWeight: 800, color: 'var(--text)',
+            letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: '16px'
+          }}>
+            The private messaging your <br />
+            <span style={{
+              background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 50%, #a855f7 100%)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
+            }}>
+              conversations deserve.
+            </span>
+          </h2>
+          <p style={{ fontSize: '15px', color: 'var(--text-muted)', maxWidth: '520px', margin: '0 auto 28px', lineHeight: 1.5 }}>
+            100% Completely Free — 24/7 Available for Everyone. No credit card, no sign-up, no restrictions.
+          </p>
+
+          <button
+            className="btn-primary"
+            onClick={scrollToSetup}
+            style={{
+              padding: '14px 32px', fontSize: '15px', borderRadius: '100px',
+              background: '#10b981', color: '#000', fontWeight: 800, border: 'none',
+              boxShadow: '0 6px 20px rgba(16,185,129,0.4)', transition: 'transform 0.15s', cursor: 'pointer'
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.04)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            Start Chatting — Free <ArrowRight size={16} />
+          </button>
+        </div>
+
+        {/* SECTION 5: FREQUENTLY ASKED QUESTIONS (Accordion - Image 4 Reference) */}
+        <div style={{ width: '100%', maxWidth: '780px' }}>
+          <div style={{
+            fontSize: '11px', fontWeight: 800, color: '#10b981', textTransform: 'uppercase',
+            letterSpacing: '0.15em', textAlign: 'center', marginBottom: '8px'
+          }}>
+            FAQ
+          </div>
+          <h2 style={{
+            fontSize: '28px', fontWeight: 800, color: 'var(--text)',
+            textAlign: 'center', marginBottom: '8px', letterSpacing: '-0.02em'
           }}>
             Frequently Asked Questions
           </h2>
+          <p style={{ fontSize: '14px', color: 'var(--text-muted)', textAlign: 'center', marginBottom: '32px' }}>
+            Everything you need to know about VanishChat.
+          </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
             {faqs.map((faq, idx) => {
@@ -207,11 +511,11 @@ export default function LandingPage() {
 
       </main>
 
-      {/* Multi-Column Sleek Footer (Exact Reference Match to Image 2) */}
+      {/* Multi-Column Sleek Footer (Exact Reference Match to Image 2 Footer) */}
       <footer style={{
         background: 'var(--surface)',
         borderTop: '1px solid var(--border)',
-        padding: '50px 24px 32px',
+        padding: '60px 24px 32px',
         width: '100%',
         zIndex: 1,
         marginTop: '60px'
@@ -222,20 +526,20 @@ export default function LandingPage() {
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: '36px',
-          paddingBottom: '36px',
+          paddingBottom: '40px',
           borderBottom: '1px solid rgba(255,255,255,0.08)'
         }}>
           {/* Column 1: Brand Info */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
               <div style={{
-                width: 30, height: 30, borderRadius: '8px',
+                width: 32, height: 32, borderRadius: '8px',
                 background: 'var(--accent-dim)', border: '1px solid var(--accent-border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
-                <Shield size={16} color="var(--accent)" />
+                <Shield size={18} color="var(--accent)" />
               </div>
-              <span style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+              <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>
                 VanishChat
               </span>
             </div>
