@@ -77,10 +77,6 @@ export default function CreateRoom() {
         <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '32px', fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.12em' }}>{created.roomCode}</span>
       </div>
 
-      <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 12px', fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', color: 'var(--text-dim)', wordBreak: 'break-all', lineHeight: 1.6 }}>
-        {created.url}
-      </div>
-
       <div style={{ display: 'flex', gap: '8px' }}>
         <button className="btn-ghost" style={{ flex: 1 }} onClick={copyLink}>
           {copied ? <><Check size={14} />Copied!</> : <><Copy size={14} />Copy Link</>}
