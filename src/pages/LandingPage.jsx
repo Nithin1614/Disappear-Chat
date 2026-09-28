@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { 
-  ShieldCheck, Flame, LockKeyhole, ArrowRight, Sparkles, Shield, FileText, Info, X, 
-  HelpCircle, Clock, KeyRound, Link2, EyeOff, Check, AlertTriangle, ChevronDown, 
-  Cpu, Activity, Zap, CheckCircle2, Copy
+  ShieldCheck, Flame, LockKeyhole, ArrowRight, Sparkles, Shield, FileText, X, 
+  HelpCircle, Clock, KeyRound, Link2, EyeOff, Check, ChevronDown, 
+  Cpu, Zap, CheckCircle2
 } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import UserSetup from '../components/auth/UserSetup';
@@ -44,6 +44,33 @@ export default function LandingPage() {
     }
   ];
 
+  const chipStyle = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    background: 'var(--surface-2)',
+    border: '1px solid var(--border)',
+    borderRadius: '100px',
+    padding: '6px 14px',
+    fontSize: '12px',
+    fontWeight: 600,
+    color: 'var(--text-muted)',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+    outline: 'none',
+  };
+
+  const footerLinkStyle = {
+    background: 'none',
+    border: 'none',
+    color: 'var(--text-muted)',
+    fontSize: '12px',
+    fontWeight: 500,
+    cursor: 'pointer',
+    padding: 0,
+    transition: 'color 0.15s ease',
+  };
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -55,8 +82,8 @@ export default function LandingPage() {
       overflowX: 'hidden'
     }}>
 
-      {/* Top Announcement Bar — Proton Swiss Style */}
-      <div style={{
+      {/* Top Announcement Bar — DESKTOP ONLY */}
+      <div className="desktop-only" style={{
         background: 'var(--surface)',
         borderBottom: '1px solid var(--border)',
         padding: '8px 20px',
@@ -101,139 +128,218 @@ export default function LandingPage() {
       <Header />
 
       {/* ========================================================================= */}
-      {/* SECTION 1: HERO (Proton Swiss Modernist Editorial Layout) */}
+      {/* MOBILE-ONLY: SUPER MINIMAL & CLEAN HERO (Zero Cramp, Perfectly Spaced)     */}
       {/* ========================================================================= */}
-      <section style={{
-        padding: 'clamp(36px, 6vh, 72px) 24px clamp(24px, 4vh, 48px)',
-        maxWidth: '1200px',
+      <main className="mobile-only" style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 'clamp(20px, 4vh, 36px) 16px',
+        maxWidth: '440px',
         margin: '0 auto',
         width: '100%',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-        gap: '48px',
-        alignItems: 'center'
+        textAlign: 'center'
       }}>
-        {/* Left Column: Editorial Headline & Value Prop */}
-        <div>
-          {/* Proton Pill Tag */}
+        {/* Pill Tag */}
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '6px',
+          background: 'var(--surface-2)',
+          border: '1px solid var(--border)',
+          borderRadius: '100px',
+          padding: '4px 12px',
+          marginBottom: '14px'
+        }}>
+          <Sparkles size={12} color="var(--accent)" />
+          <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text)', letterSpacing: '0.01em' }}>
+            AES-256-GCM · Zero Logs
+          </span>
+        </div>
+
+        {/* Clean Headline */}
+        <h1 style={{
+          fontSize: 'clamp(28px, 7.5vw, 36px)',
+          fontWeight: 800,
+          color: 'var(--text)',
+          letterSpacing: '-0.03em',
+          lineHeight: 1.15,
+          marginBottom: '8px'
+        }}>
+          Private by default.<br />
+          <span style={{ color: 'var(--accent)' }}>Unbreakable</span> by design.
+        </h1>
+
+        <p style={{
+          fontSize: '13px',
+          color: 'var(--text-muted)',
+          maxWidth: '320px',
+          margin: '0 auto 18px',
+          lineHeight: 1.45
+        }}>
+          Self-destructing rooms & secret links. Nothing stays.
+        </p>
+
+        {/* Quick Dashboard link if already authenticated */}
+        {isAuthenticated && (
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
+            marginBottom: '16px',
             background: 'var(--surface-2)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-pill)',
-            padding: '5px 14px',
-            marginBottom: '20px'
+            border: '1px solid var(--accent-border)',
+            padding: '5px 12px',
+            borderRadius: '100px'
           }}>
-            <ShieldCheck size={14} color="var(--accent)" />
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text)', letterSpacing: '0.01em' }}>
-              Zero-Access Cryptographic Architecture
+            <span style={{ fontSize: '12px', color: 'var(--text)' }}>
+              Active as <strong style={{ color: 'var(--accent)' }}>{displayName || userId}</strong>
             </span>
+            <button
+              className="btn-primary"
+              onClick={handleGoToDashboard}
+              style={{ width: 'auto', padding: '4px 10px', fontSize: '11px' }}
+            >
+              Enter Dashboard →
+            </button>
           </div>
+        )}
 
-          {/* Clean Swiss Headline (No tacky gradients) */}
-          <h1 style={{
-            fontSize: 'clamp(36px, 5.2vw, 56px)',
-            fontWeight: 800,
-            color: 'var(--text)',
-            letterSpacing: '-0.035em',
-            lineHeight: 1.1,
-            marginBottom: '20px'
-          }}>
-            Private by default.<br />
-            <span style={{ color: 'var(--accent)' }}>Unbreakable</span> by design.
-          </h1>
-
-          <p style={{
-            fontSize: 'clamp(15px, 1.8vw, 17px)',
-            color: 'var(--text-muted)',
-            lineHeight: 1.6,
-            maxWidth: '520px',
-            marginBottom: '32px'
-          }}>
-            The end-to-end encrypted ephemeral workspace. Host self-destructing rooms, dispatch burn-on-read secret links, and leave zero digital footprint.
-          </p>
-
-          {/* Quick Metrics Badges */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '12px',
-            maxWidth: '460px',
-            paddingTop: '16px',
-            borderTop: '1px solid var(--border)'
-          }}>
-            <div>
-              <p style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text)' }}>256-Bit</p>
-              <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '2px' }}>AES-GCM Encryption</p>
-            </div>
-            <div>
-              <p style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text)' }}>0 Bytes</p>
-              <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '2px' }}>Server Logs Kept</p>
-            </div>
-            <div>
-              <p style={{ fontSize: '18px', fontWeight: 700, color: 'var(--success)' }}>100% Free</p>
-              <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '2px' }}>No Card or Account</p>
-            </div>
-          </div>
+        {/* Direct Single Identity Card (No double wrapping) */}
+        <div style={{ width: '100%', marginBottom: '18px' }}>
+          <UserSetup />
         </div>
 
-        {/* Right Column: Identity Vault Card */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{
-            width: '100%',
-            maxWidth: '420px',
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-xl)',
-            boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
-            padding: '24px',
-            position: 'relative'
-          }}>
-            {/* Card Top Indicator */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '18px',
-              paddingBottom: '14px',
-              borderBottom: '1px solid var(--border-light)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: '8px',
-                  background: 'var(--accent-dim)',
-                  border: '1px solid var(--accent-border)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <KeyRound size={14} color="var(--accent)" />
-                </div>
-                <div>
-                  <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Cryptographic Identity</p>
-                  <p style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Stored in volatile memory</p>
-                </div>
-              </div>
+        {/* Minimal Feature Chips for Mobile */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          flexWrap: 'wrap',
+          width: '100%'
+        }}>
+          <button 
+            onClick={() => setActiveModal('security')} 
+            style={chipStyle}
+          >
+            <LockKeyhole size={12} color="var(--accent)" />
+            <span>E2E Encrypted</span>
+          </button>
 
-              <span className="proton-badge">
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)' }} />
-                Active
+          <button 
+            onClick={() => setActiveModal('how-it-works')} 
+            style={chipStyle}
+          >
+            <Flame size={12} color="var(--danger)" />
+            <span>Self-Destruct</span>
+          </button>
+
+          <button 
+            onClick={() => setActiveModal('privacy')} 
+            style={chipStyle}
+          >
+            <Clock size={12} color="var(--cyan)" />
+            <span>24h Auto-Wipe</span>
+          </button>
+        </div>
+      </main>
+
+      {/* ========================================================================= */}
+      {/* DESKTOP-ONLY: FULL SWISS EDITORIAL HERO & METRICS                         */}
+      {/* ========================================================================= */}
+      <section className="desktop-only" style={{
+        padding: 'clamp(48px, 6vh, 72px) 24px clamp(32px, 4vh, 48px)',
+        maxWidth: '1200px',
+        margin: '0 auto',
+        width: '100%'
+      }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1.2fr 1fr',
+          gap: '56px',
+          alignItems: 'center'
+        }}>
+          {/* Left Column: Editorial Headline & Value Prop */}
+          <div>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-pill)',
+              padding: '5px 14px',
+              marginBottom: '20px'
+            }}>
+              <ShieldCheck size={14} color="var(--accent)" />
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text)', letterSpacing: '0.01em' }}>
+                Zero-Access Cryptographic Architecture
               </span>
             </div>
 
-            {/* Embedded Identity Component */}
+            <h1 style={{
+              fontSize: 'clamp(40px, 4.5vw, 56px)',
+              fontWeight: 800,
+              color: 'var(--text)',
+              letterSpacing: '-0.035em',
+              lineHeight: 1.1,
+              marginBottom: '20px'
+            }}>
+              Private by default.<br />
+              <span style={{ color: 'var(--accent)' }}>Unbreakable</span> by design.
+            </h1>
+
+            <p style={{
+              fontSize: '16px',
+              color: 'var(--text-muted)',
+              lineHeight: 1.6,
+              maxWidth: '520px',
+              marginBottom: '32px'
+            }}>
+              The end-to-end encrypted ephemeral workspace. Host self-destructing rooms, dispatch burn-on-read secret links, and leave zero digital footprint.
+            </p>
+
+            {/* Quick Metrics Badges */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '16px',
+              maxWidth: '480px',
+              paddingTop: '20px',
+              borderTop: '1px solid var(--border)'
+            }}>
+              <div>
+                <p style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>256-Bit</p>
+                <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '2px' }}>AES-GCM Encryption</p>
+              </div>
+              <div>
+                <p style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>0 Bytes</p>
+                <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '2px' }}>Server Logs Kept</p>
+              </div>
+              <div>
+                <p style={{ fontSize: '20px', fontWeight: 800, color: 'var(--success)' }}>100% Free</p>
+                <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '2px' }}>No Card or Account</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Identity Vault Setup */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <UserSetup />
 
             {/* If Authenticated: Direct CTA */}
             {isAuthenticated && (
               <div style={{
                 marginTop: '16px',
-                paddingTop: '16px',
-                borderTop: '1px solid var(--border)',
+                width: '100%',
+                maxWidth: '400px',
+                background: 'var(--surface-2)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                padding: '12px 16px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -257,13 +363,13 @@ export default function LandingPage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* SECTION 2: HOW ZERO-ACCESS CRYPTOGRAPHY WORKS (Visual Architecture) */}
+      {/* DESKTOP-ONLY: SECTION 2 - HOW ZERO-ACCESS CRYPTOGRAPHY WORKS               */}
       {/* ========================================================================= */}
-      <section style={{
+      <section className="desktop-only" style={{
         background: 'var(--surface)',
         borderTop: '1px solid var(--border)',
         borderBottom: '1px solid var(--border)',
-        padding: 'clamp(48px, 6vh, 80px) 24px'
+        padding: '64px 24px'
       }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', textAlign: 'center' }}>
           <div style={{
@@ -283,7 +389,7 @@ export default function LandingPage() {
           </div>
 
           <h2 style={{
-            fontSize: 'clamp(26px, 3.8vw, 38px)',
+            fontSize: '32px',
             fontWeight: 800,
             letterSpacing: '-0.025em',
             marginBottom: '12px',
@@ -304,7 +410,7 @@ export default function LandingPage() {
           {/* 3 Step Diagram Flow */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gridTemplateColumns: 'repeat(3, 1fr)',
             gap: '24px',
             textAlign: 'left'
           }}>
@@ -313,8 +419,7 @@ export default function LandingPage() {
               background: 'var(--bg)',
               border: '1px solid var(--border)',
               borderRadius: 'var(--radius-lg)',
-              padding: '28px 24px',
-              position: 'relative'
+              padding: '28px 24px'
             }}>
               <div style={{
                 display: 'inline-flex',
@@ -345,8 +450,7 @@ export default function LandingPage() {
               background: 'var(--bg)',
               border: '1px solid var(--border)',
               borderRadius: 'var(--radius-lg)',
-              padding: '28px 24px',
-              position: 'relative'
+              padding: '28px 24px'
             }}>
               <div style={{
                 display: 'inline-flex',
@@ -377,8 +481,7 @@ export default function LandingPage() {
               background: 'var(--bg)',
               border: '1px solid var(--border)',
               borderRadius: 'var(--radius-lg)',
-              padding: '28px 24px',
-              position: 'relative'
+              padding: '28px 24px'
             }}>
               <div style={{
                 display: 'inline-flex',
@@ -408,10 +511,10 @@ export default function LandingPage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* SECTION 3: PROTON BENTO GRID (Feature Highlights) */}
+      {/* DESKTOP-ONLY: SECTION 3 - PROTON BENTO GRID (Feature Highlights)          */}
       {/* ========================================================================= */}
-      <section style={{
-        padding: 'clamp(48px, 6vh, 80px) 24px',
+      <section className="desktop-only" style={{
+        padding: '64px 24px',
         maxWidth: '1100px',
         margin: '0 auto',
         width: '100%'
@@ -432,7 +535,7 @@ export default function LandingPage() {
               Security Suite
             </span>
           </div>
-          <h2 style={{ fontSize: 'clamp(26px, 3.8vw, 38px)', fontWeight: 800, letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '12px' }}>
             Built for High-Stakes Privacy
           </h2>
           <p style={{ fontSize: '15px', color: 'var(--text-muted)', maxWidth: '520px', margin: '0 auto' }}>
@@ -443,7 +546,7 @@ export default function LandingPage() {
         {/* Bento Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gridTemplateColumns: 'repeat(2, 1fr)',
           gap: '20px'
         }}>
           {/* Bento 1: Secret Links */}
@@ -525,7 +628,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Bento 3: Forward Secrecy & Dead Man Switch */}
+          {/* Bento 3: Forward Secrecy & Timers */}
           <div style={{
             background: 'var(--surface)',
             border: '1px solid var(--border)',
@@ -611,17 +714,17 @@ export default function LandingPage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* SECTION 4: COMPARISON MATRIX (VanishChat vs Traditional Big Tech) */}
+      {/* DESKTOP-ONLY: SECTION 4 - COMPARISON MATRIX                                */}
       {/* ========================================================================= */}
-      <section style={{
+      <section className="desktop-only" style={{
         background: 'var(--surface)',
         borderTop: '1px solid var(--border)',
         borderBottom: '1px solid var(--border)',
-        padding: 'clamp(48px, 6vh, 80px) 24px'
+        padding: '64px 24px'
       }}>
         <div style={{ maxWidth: '960px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-            <h2 style={{ fontSize: 'clamp(26px, 3.8vw, 36px)', fontWeight: 800, letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '10px' }}>
+            <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '10px' }}>
               Why VanishChat Stands Apart
             </h2>
             <p style={{ fontSize: '15px', color: 'var(--text-muted)' }}>
@@ -629,7 +732,6 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* Table Container */}
           <div style={{
             background: 'var(--bg)',
             border: '1px solid var(--border)',
@@ -681,10 +783,10 @@ export default function LandingPage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* SECTION 5: ACCORDION FAQ */}
+      {/* DESKTOP-ONLY: SECTION 5 - ACCORDION FAQ                                   */}
       {/* ========================================================================= */}
-      <section style={{
-        padding: 'clamp(48px, 6vh, 80px) 24px',
+      <section className="desktop-only" style={{
+        padding: '64px 24px',
         maxWidth: '800px',
         margin: '0 auto',
         width: '100%'
@@ -705,7 +807,7 @@ export default function LandingPage() {
               Frequently Asked Questions
             </span>
           </div>
-          <h2 style={{ fontSize: 'clamp(26px, 3.8vw, 36px)', fontWeight: 800, letterSpacing: '-0.025em', color: 'var(--text)' }}>
+          <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.025em', color: 'var(--text)' }}>
             Got Questions? We Have Answers.
           </h2>
         </div>
@@ -771,9 +873,9 @@ export default function LandingPage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* SECTION 6: PROTON MULTI-COLUMN FOOTER */}
+      {/* DESKTOP-ONLY: SECTION 6 - PROTON MULTI-COLUMN FOOTER                      */}
       {/* ========================================================================= */}
-      <footer style={{
+      <footer className="desktop-only" style={{
         background: 'var(--surface)',
         borderTop: '1px solid var(--border)',
         padding: '48px 24px 28px',
@@ -783,7 +885,7 @@ export default function LandingPage() {
           maxWidth: '1100px',
           margin: '0 auto',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gridTemplateColumns: 'repeat(4, 1fr)',
           gap: '36px',
           marginBottom: '40px'
         }}>
@@ -847,7 +949,7 @@ export default function LandingPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
               <button
                 onClick={() => setActiveModal('how-it-works')}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', textAlign: 'left', cursor: 'pointer', padding: 0 }}
+                style={footerLinkStyle}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
               >
@@ -855,7 +957,7 @@ export default function LandingPage() {
               </button>
               <button
                 onClick={() => setActiveModal('security')}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', textAlign: 'left', cursor: 'pointer', padding: 0 }}
+                style={footerLinkStyle}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
               >
@@ -863,7 +965,7 @@ export default function LandingPage() {
               </button>
               <button
                 onClick={() => setActiveModal('privacy')}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', textAlign: 'left', cursor: 'pointer', padding: 0 }}
+                style={footerLinkStyle}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
               >
@@ -871,7 +973,7 @@ export default function LandingPage() {
               </button>
               <button
                 onClick={() => setActiveModal('terms')}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', textAlign: 'left', cursor: 'pointer', padding: 0 }}
+                style={footerLinkStyle}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
               >
@@ -901,16 +1003,37 @@ export default function LandingPage() {
       </footer>
 
       {/* ========================================================================= */}
-      {/* PROTON INFORMATION MODALS */}
+      {/* MOBILE-ONLY: SUPER MINIMAL 1-LINE FOOTER                                   */}
+      {/* ========================================================================= */}
+      <footer className="mobile-only" style={{
+        background: 'var(--surface)',
+        borderTop: '1px solid var(--border)',
+        padding: '16px 20px',
+        marginTop: 'auto',
+        textAlign: 'center'
+      }}>
+        <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginBottom: '8px' }}>
+          © {new Date().getFullYear()} VanishChat · 100% Free 24/7 · Zero Logs
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', fontSize: '12px', flexWrap: 'wrap' }}>
+          <button onClick={() => setActiveModal('how-it-works')} style={footerLinkStyle}>How It Works</button>
+          <button onClick={() => setActiveModal('security')} style={footerLinkStyle}>Security</button>
+          <button onClick={() => setActiveModal('privacy')} style={footerLinkStyle}>Privacy</button>
+          <button onClick={() => setActiveModal('terms')} style={footerLinkStyle}>Terms</button>
+        </div>
+      </footer>
+
+      {/* ========================================================================= */}
+      {/* PROTON INFORMATION MODALS (Interactive across both mobile & desktop)       */}
       {/* ========================================================================= */}
       {activeModal && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: '20px'
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: '16px'
         }}>
           <div style={{
             background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)',
-            maxWidth: '520px', width: '100%', padding: '28px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+            maxWidth: '520px', width: '100%', padding: 'clamp(20px, 4.5vw, 28px)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
             maxHeight: '85vh', overflowY: 'auto'
           }}>
             {/* Modal Header */}
@@ -937,17 +1060,17 @@ export default function LandingPage() {
 
             {/* Modal Body: How It Works */}
             {activeModal === 'how-it-works' && (
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ background: 'var(--surface-2)', padding: '14px', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
-                  <strong style={{ color: 'var(--accent)', display: 'block', marginBottom: '4px' }}>01. Instant Anonymous Identity</strong>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ background: 'var(--surface-2)', padding: '12px 14px', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+                  <strong style={{ color: 'var(--accent)', display: 'block', marginBottom: '2px' }}>01. Instant Anonymous Identity</strong>
                   Select a display name. Your browser derives a temporary 24-hour cryptographic key without email or password.
                 </div>
-                <div style={{ background: 'var(--surface-2)', padding: '14px', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
-                  <strong style={{ color: 'var(--success)', display: 'block', marginBottom: '4px' }}>02. Ephemeral Room or Secret Link</strong>
+                <div style={{ background: 'var(--surface-2)', padding: '12px 14px', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+                  <strong style={{ color: 'var(--success)', display: 'block', marginBottom: '2px' }}>02. Ephemeral Room or Secret Link</strong>
                   Create a room with an automatic self-destruct countdown timer. Invite contacts via room code or secure QR code.
                 </div>
-                <div style={{ background: 'var(--surface-2)', padding: '14px', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
-                  <strong style={{ color: 'var(--danger)', display: 'block', marginBottom: '4px' }}>03. Permanent Disintegration</strong>
+                <div style={{ background: 'var(--surface-2)', padding: '12px 14px', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+                  <strong style={{ color: 'var(--danger)', display: 'block', marginBottom: '2px' }}>03. Permanent Disintegration</strong>
                   All content is client-side encrypted. When countdown reaches zero, all messages dissolve into dust particles and vanish from storage.
                 </div>
               </div>
@@ -983,7 +1106,7 @@ export default function LandingPage() {
             <button
               className="btn-primary"
               onClick={() => setActiveModal(null)}
-              style={{ marginTop: '20px', width: '100%', padding: '10px' }}
+              style={{ marginTop: '18px', width: '100%', padding: '10px' }}
             >
               Close
             </button>

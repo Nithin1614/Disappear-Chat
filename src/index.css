@@ -310,3 +310,21 @@ input[type="range"]::-webkit-slider-thumb {
   pointer-events: none;
   animation: flash-black 0.4s ease forwards;
 }
+
+/* ===== Responsive Display & Spacing Helpers ===== */
+@media (max-width: 768px) {
+  .desktop-only { display: none !important; }
+  .desktop-flex { display: none !important; }
+  .desktop-grid { display: none !important; }
+  .mobile-only { display: block !important; }
+  .mobile-flex { display: flex !important; }
+}
+
+@media (min-width: 769px) {
+  .desktop-only { display: block !important; }
+  .desktop-flex { display: flex !important; }
+  .desktop-grid { display: grid !important; }
+  .mobile-only { display: none !important; }
+  .mobile-flex { display: none !important; }
+}
+

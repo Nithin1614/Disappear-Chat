@@ -58,12 +58,12 @@ export default function UserSetup() {
   };
 
   return (
-    <div style={{ width: '100%', maxWidth: '420px', margin: '0 auto' }}>
+    <div style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }}>
       <div style={{
         background: 'var(--surface)',
         border: '1px solid var(--border)',
-        borderRadius: '18px',
-        padding: 'clamp(20px, 4.5vw, 28px)',
+        borderRadius: '16px',
+        padding: 'clamp(16px, 4vw, 24px)',
         boxShadow: '0 8px 30px rgba(0, 0, 0, 0.35)',
         position: 'relative'
       }}>
@@ -76,14 +76,14 @@ export default function UserSetup() {
           background: 'var(--surface-2)',
           borderRadius: '9999px',
           border: '1px solid var(--border)',
-          marginBottom: '22px'
+          marginBottom: '18px'
         }}>
           <button
             onClick={() => setMode('create')}
             style={{
               flex: 1,
-              padding: '8px 0',
-              fontSize: '13px',
+              padding: '8px 4px',
+              fontSize: '12px',
               fontWeight: 600,
               cursor: 'pointer',
               border: 'none',
@@ -105,8 +105,8 @@ export default function UserSetup() {
             onClick={() => setMode('login')}
             style={{
               flex: 1,
-              padding: '8px 0',
-              fontSize: '13px',
+              padding: '8px 4px',
+              fontSize: '12px',
               fontWeight: 600,
               cursor: 'pointer',
               border: 'none',
@@ -126,12 +126,12 @@ export default function UserSetup() {
         </div>
 
         {mode === 'create' ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* Generated ID Container (Proton Token Display) */}
             <div style={{
               textAlign: 'center',
               background: 'var(--surface-2)',
-              padding: '16px 14px',
+              padding: '14px 12px',
               borderRadius: '12px',
               border: '1px solid var(--border)'
             }}>
@@ -142,7 +142,7 @@ export default function UserSetup() {
                 fontSize: '11px',
                 fontWeight: 600,
                 color: 'var(--text-muted)',
-                marginBottom: '8px',
+                marginBottom: '6px',
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em'
               }}>
@@ -153,7 +153,7 @@ export default function UserSetup() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                 <span style={{
                   fontFamily: 'JetBrains Mono, monospace',
-                  fontSize: '28px',
+                  fontSize: 'clamp(22px, 6.5vw, 28px)',
                   fontWeight: 800,
                   color: 'var(--accent)',
                   letterSpacing: '0.12em'

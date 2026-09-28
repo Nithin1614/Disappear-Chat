@@ -169,18 +169,20 @@ export default function Header() {
               </button>
             </div>
           ) : (
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '4px 10px',
-              borderRadius: '9999px',
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              fontSize: '11px',
-              fontWeight: 600,
-              color: 'var(--text-muted)'
-            }}>
+            <div
+              className="desktop-flex"
+              style={{
+                alignItems: 'center',
+                gap: '6px',
+                padding: '4px 10px',
+                borderRadius: '9999px',
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                fontSize: '11px',
+                fontWeight: 600,
+                color: 'var(--text-muted)'
+              }}
+            >
               <Lock size={11} color="var(--success)" />
               <span>100% Free · 24/7</span>
             </div>
