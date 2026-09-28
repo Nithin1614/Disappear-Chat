@@ -53,7 +53,7 @@ export default function MessageBubble({ message, isSender, decryptedContent, dec
   if (burnDone) return (
     <div style={{ display: 'flex', justifyContent: isSender ? 'flex-end' : 'flex-start', marginBottom: '8px', padding: '0 16px' }}>
       <span style={{ fontSize: '12px', color: 'var(--text-dim)', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <Flame size={13} color="var(--danger)" /> Message self-destructed
+        <Flame size={13} color="var(--danger)" /> Message Vanished
       </span>
     </div>
   );

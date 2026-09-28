@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Flame, Shield, AlertTriangle, Lock } from 'lucide-react';
+import { Flame, Lock, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useThanosSnap } from '../hooks/useThanosSnap';
 
 // Derive AES key from token
 async function deriveKeyFromToken(token) {
@@ -25,13 +26,21 @@ async function decryptContent(encryptedBase64, ivBase64, key) {
 
 export default function SecretLinkPage() {
   const { token } = useParams();
-  const [state, setState] = useState('loading'); // loading | ready | read | snapping | destroyed | expired | error
+  const [state, setState] = useState('loading'); // loading | ready | reading | read | snapping | destroyed | error
   const [message, setMessage] = useState('');
-  const [countdown, setCountdown] = useState(20);
+  const [countdown, setCountdown] = useState(5);
   const [linkData, setLinkData] = useState(null);
+  const cardRef = useRef(null);
+  const { triggerSnap } = useThanosSnap();
 
   useEffect(() => {
     if (!token) { setState('error'); return; }
+
+    // If already revealed or viewed in this browser, never show again
+    if (sessionStorage.getItem('viewed_' + token) || localStorage.getItem('viewed_' + token)) {
+      setState('destroyed');
+      return;
+    }
 
     async function fetchLink() {
       const { data, error } = await supabase
@@ -41,12 +50,12 @@ export default function SecretLinkPage() {
         .eq('is_read', false)
         .single();
 
-      if (error || !data) { setState('expired'); return; }
+      if (error || !data) { setState('destroyed'); return; }
 
       // Check TTL
       if (data.expires_at && new Date(data.expires_at) < new Date()) {
         await supabase.from('secret_links').delete().eq('token', token);
-        setState('expired'); return;
+        setState('destroyed'); return;
       }
 
       setLinkData(data);
@@ -56,27 +65,33 @@ export default function SecretLinkPage() {
     fetchLink();
   }, [token]);
 
-function calculateSelfDestructSeconds(text) {
-  if (!text || !text.trim()) return 5;
-  const words = text.trim().split(/\s+/).filter(Boolean).length;
-  if (words <= 1) return 5;
-  if (words === 2) return 6;
-  if (words === 3) return 7;
-  if (words <= 10) return 3 + words;
-  return 5 + words;
-}
+  function calculateSelfDestructSeconds(text) {
+    if (!text || !text.trim()) return 5;
+    const words = text.trim().split(/\s+/).filter(Boolean).length;
+    if (words <= 1) return 5;
+    if (words === 2) return 6;
+    if (words === 3) return 7;
+    if (words <= 10) return 3 + words;
+    return 5 + words;
+  }
 
   const handleReveal = async () => {
     if (!linkData) return;
     setState('reading');
 
+    // Mark as viewed in browser storage immediately so refresh can NEVER reload it
+    try {
+      sessionStorage.setItem('viewed_' + token, 'true');
+      localStorage.setItem('viewed_' + token, 'true');
+    } catch {}
+
+    // Delete from DB immediately on reveal so no other request or tab can read it
+    supabase.from('secret_links').delete().eq('token', token).then(() => {});
+
     try {
       const key = await deriveKeyFromToken(token);
       const decrypted = await decryptContent(linkData.encrypted_content, linkData.iv, key);
       setMessage(decrypted);
-
-      // Delete from DB immediately
-      await supabase.from('secret_links').delete().eq('token', token);
 
       const initialSeconds = calculateSelfDestructSeconds(decrypted);
       setCountdown(initialSeconds);
@@ -89,13 +104,17 @@ function calculateSelfDestructSeconds(text) {
         if (c <= 1) {
           clearInterval(interval);
           setState('snapping');
-          setTimeout(() => {
+          if (cardRef.current) {
+            triggerSnap(cardRef.current, () => {
+              setState('destroyed');
+            });
+          } else {
             setState('destroyed');
-          }, 1200);
+          }
         }
       }, 1000);
     } catch {
-      setState('error');
+      setState('destroyed');
     }
   };
 
@@ -155,41 +174,14 @@ function calculateSelfDestructSeconds(text) {
           )}
 
           {(state === 'read' || state === 'snapping') && (
-            <div className={state === 'snapping' ? 'thanos-snap-anim' : ''} style={{ position: 'relative' }}>
-
-              {/* Particle overlay when snapping */}
-              {state === 'snapping' && (
-                <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10 }}>
-                  {Array.from({ length: 32 }).map((_, i) => {
-                    const rx = (Math.random() - 0.5) * 160;
-                    const ry = -(Math.random() * 100 + 20);
-                    const hue = Math.random() > 0.5 ? 270 : 340;
-                    return (
-                      <div
-                        key={i}
-                        style={{
-                          position: 'absolute',
-                          left: `${Math.random() * 100}%`,
-                          top: `${Math.random() * 100}%`,
-                          width: Math.random() * 6 + 2,
-                          height: Math.random() * 6 + 2,
-                          borderRadius: '50%',
-                          background: `hsl(${hue}, 85%, 60%)`,
-                          boxShadow: `0 0 8px hsl(${hue}, 90%, 60%)`,
-                          animation: `link-particle 1.2s ease-out forwards`,
-                          transform: `translate(${rx}px, ${ry}px)`,
-                          opacity: 0,
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              )}
-
-              <div style={{
-                background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.35)',
-                borderRadius: '12px', padding: '20px', marginBottom: '20px', textAlign: 'left'
-              }}>
+            <div style={{ position: 'relative' }}>
+              <div
+                ref={cardRef}
+                style={{
+                  background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.35)',
+                  borderRadius: '12px', padding: '20px', marginBottom: '20px', textAlign: 'left'
+                }}
+              >
                 <p style={{ fontSize: '15px', lineHeight: 1.7, whiteSpace: 'pre-wrap', color: '#fff', wordBreak: 'break-word' }}>
                   {message}
                 </p>
@@ -198,31 +190,22 @@ function calculateSelfDestructSeconds(text) {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#ef4444' }}>
                 <Flame size={16} />
                 <span style={{ fontSize: '13px', fontWeight: 700 }}>
-                  {state === 'snapping' ? '💥 Disintegrating message…' : `Self-destructing in ${countdown} second${countdown !== 1 ? 's' : ''}…`}
+                  {state === 'snapping' ? 'Disintegrating…' : `Self-destructing in ${countdown} second${countdown !== 1 ? 's' : ''}…`}
                 </span>
               </div>
             </div>
           )}
 
-          {state === 'destroyed' && (
+          {(state === 'destroyed' || state === 'expired') && (
             <>
-              <Flame size={44} color="#ef4444" style={{ margin: '0 auto 16px', display: 'block' }} />
-              <p style={{ fontSize: '18px', fontWeight: 800, marginBottom: '8px' }}>Message Vanished</p>
-              <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px', lineHeight: 1.6 }}>
-                This message has been completely disintegrated. All encryption keys & data wiped permanently.
+              <Flame size={40} color="#ef4444" style={{ margin: '0 auto 16px', display: 'block' }} />
+              <p style={{ fontSize: '18px', fontWeight: 800, marginBottom: '6px', color: '#fff' }}>Message Deleted</p>
+              <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '20px', lineHeight: 1.5 }}>
+                This one-time message was viewed and permanently deleted.
               </p>
-              <a href="/" style={{ color: 'var(--accent)', fontSize: '14px', fontWeight: 600, textDecoration: 'none' }}>← Return to VanishChat</a>
-            </>
-          )}
-
-          {state === 'expired' && (
-            <>
-              <AlertTriangle size={36} color="#f59e0b" style={{ margin: '0 auto 16px', display: 'block' }} />
-              <p style={{ fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>Link Expired or Already Read</p>
-              <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>
-                This self-destruct link has already been viewed or has expired.
-              </p>
-              <a href="/" style={{ color: 'var(--accent)', fontSize: '13px', textDecoration: 'none' }}>← Return to VanishChat</a>
+              <a href="/" style={{ color: 'var(--accent)', fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}>
+                ← Return to VanishChat
+              </a>
             </>
           )}
 
@@ -239,13 +222,6 @@ function calculateSelfDestructSeconds(text) {
           🔒 End-to-end encrypted · Self-destructing · VanishChat
         </p>
       </div>
-
-      <style>{`
-        @keyframes link-particle {
-          0%   { opacity: 1; transform: translate(0,0) scale(1); }
-          100% { opacity: 0; transform: translate(var(--rx, 40px), var(--ry, -50px)) scale(0.2); }
-        }
-      `}</style>
     </div>
   );
 }

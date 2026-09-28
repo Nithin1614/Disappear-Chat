@@ -64,7 +64,7 @@ export default function UserSetup() {
 
   return (
     <div style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }}>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '28px' }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: 'clamp(18px, 4vw, 28px)' }}>
 
         {/* Tab */}
         <div style={{ display: 'flex', gap: '4px', padding: '4px', background: 'var(--surface-2)', borderRadius: '10px', marginBottom: '24px' }}>
