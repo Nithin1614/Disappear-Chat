@@ -143,7 +143,7 @@ export default function Dashboard() {
           <div style={{
             background: 'var(--accent-dim)',
             border: '1px solid var(--accent-border)',
-            borderRadius: '16px',
+            borderRadius: 'var(--radius-lg)',
             padding: '16px 20px 20px',
             display: 'flex',
             flexDirection: 'column',
@@ -160,18 +160,18 @@ export default function Dashboard() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                 <div style={{
-                  width: 40, height: 40, borderRadius: '10px',
+                  width: 38, height: 38, borderRadius: 'var(--radius)',
                   background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
                 }}>
-                  <MessageSquare size={20} color="#fff" />
+                  <MessageSquare size={18} color="#fff" />
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
-                    Accidentally exited your chat? Re-enter active session in Room <span style={{ color: 'var(--accent)', fontFamily: 'JetBrains Mono, monospace' }}>{rejoinRoomCode}</span>
+                  <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
+                    Accidentally exited chat? Re-enter active session in Room <span style={{ color: 'var(--accent)', fontFamily: 'JetBrains Mono, monospace' }}>{rejoinRoomCode}</span>
                   </p>
                   <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                    One-time re-entry prompt · Expires in <strong style={{ color: 'var(--accent)' }}>{reentrySeconds}s</strong>
+                    One-time re-entry prompt · Self-destructs in <strong style={{ color: 'var(--accent)' }}>{reentrySeconds}s</strong>
                   </p>
                 </div>
               </div>
@@ -180,7 +180,7 @@ export default function Dashboard() {
                 <button
                   onClick={handleRejoin}
                   className="btn-primary"
-                  style={{ width: 'auto', padding: '9px 18px', fontSize: '13px', fontWeight: 700 }}
+                  style={{ width: 'auto', padding: '8px 18px', fontSize: '13px' }}
                 >
                   Enter Chat Again
                 </button>
@@ -198,7 +198,7 @@ export default function Dashboard() {
             <div style={{
               width: '100%',
               height: '4px',
-              background: 'rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.08)',
               borderRadius: '2px',
               overflow: 'hidden',
             }}>
@@ -213,42 +213,84 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* User Card */}
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-          <div style={{ width: 48, height: 48, borderRadius: '12px', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <User size={22} color="#fff" />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)' }}>{displayName || userId}</span>
-              <button onClick={copyUserId} title="Copy ID"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0 }}>
-                <Copy size={15} />
-              </button>
+        {/* Proton Identity Vault Header Card */}
+        <div style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '20px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 'var(--radius)',
+              background: 'var(--accent-dim)', border: '1px solid var(--accent-border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: 700, fontSize: '18px', color: 'var(--accent)', flexShrink: 0
+            }}>
+              {(displayName || userId || 'U').charAt(0).toUpperCase()}
             </div>
-            <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-              ID: {userId} · Identity expires in 24h
-            </p>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)' }}>
+                  {displayName || userId}
+                </span>
+                <span className="proton-badge">
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)' }} />
+                  Zero-Access Active
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px' }}>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: 'var(--text-muted)' }}>
+                  ID: {userId}
+                </span>
+                <button
+                  onClick={copyUserId}
+                  title="Copy ID"
+                  style={{
+                    background: 'var(--surface-2)', border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)', padding: '2px 8px', cursor: 'pointer',
+                    color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px',
+                    fontSize: '11px', fontWeight: 500
+                  }}
+                >
+                  <Copy size={11} /> Copy ID
+                </button>
+                <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>· Expires in 24h</span>
+              </div>
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)' }} />
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Online</span>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              padding: '6px 12px', borderRadius: 'var(--radius-pill)',
+              background: 'var(--surface-2)', border: '1px solid var(--border)',
+              fontSize: '12px', color: 'var(--text-muted)'
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 6px var(--success)' }} />
+              Live Relay Connected
+            </span>
           </div>
         </div>
 
         {/* Room actions grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
-          <Section title="Create a Room" icon={Plus}><CreateRoom /></Section>
-          <Section title="Join a Room" icon={LogIn}><JoinRoom /></Section>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+          <Section title="Create Ephemeral Room" icon={Plus}><CreateRoom /></Section>
+          <Section title="Join by Room Code" icon={LogIn}><JoinRoom /></Section>
         </div>
 
         {/* Find users */}
-        <Section title="Find Users & Direct Chat" icon={Search}>
+        <Section title="Direct Contact Directory" icon={Search}>
           <UserSearch />
         </Section>
 
         {/* Self-destruct link */}
-        <Section title="Self-Destruct Secret Link" icon={Flame}>
+        <Section title="One-Time Self-Destruct Secret Link" icon={Flame}>
           <CreateSecretLink />
         </Section>
 

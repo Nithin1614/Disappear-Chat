@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { RefreshCw, ArrowRight, UserCheck } from 'lucide-react';
+import { RefreshCw, ArrowRight, UserCheck, Shield, KeyRound, LogIn } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { generateUserId, isValidUserId } from '../../lib/userIdGenerator';
 import { useUser } from '../../context/UserContext';
@@ -57,53 +57,141 @@ export default function UserSetup() {
     } finally { setLoading(false); }
   };
 
-  const tabBase = {
-    flex: 1, padding: '10px 0', fontSize: '14px', fontWeight: 600,
-    cursor: 'pointer', border: 'none', borderRadius: '8px', transition: 'all 0.15s ease',
-  };
-
   return (
-    <div style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }}>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: 'clamp(18px, 4vw, 28px)' }}>
+    <div style={{ width: '100%', maxWidth: '420px', margin: '0 auto' }}>
+      <div style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: '18px',
+        padding: 'clamp(20px, 4.5vw, 28px)',
+        boxShadow: '0 8px 30px rgba(0, 0, 0, 0.35)',
+        position: 'relative'
+      }}>
 
-        {/* Tab */}
-        <div style={{ display: 'flex', gap: '4px', padding: '4px', background: 'var(--surface-2)', borderRadius: '10px', marginBottom: '24px' }}>
+        {/* Proton Segmented Switcher */}
+        <div style={{
+          display: 'flex',
+          gap: '3px',
+          padding: '3px',
+          background: 'var(--surface-2)',
+          borderRadius: '9999px',
+          border: '1px solid var(--border)',
+          marginBottom: '22px'
+        }}>
           <button
             onClick={() => setMode('create')}
-            style={{ ...tabBase, background: mode === 'create' ? 'var(--accent)' : 'transparent', color: mode === 'create' ? '#fff' : 'var(--text-muted)' }}
-          >Create Identity</button>
+            style={{
+              flex: 1,
+              padding: '8px 0',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: 'none',
+              borderRadius: '9999px',
+              transition: 'all 0.15s ease',
+              background: mode === 'create' ? 'var(--accent)' : 'transparent',
+              color: mode === 'create' ? '#FFFFFF' : 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
+            }}
+          >
+            <Shield size={13} />
+            <span>Create Identity</span>
+          </button>
+
           <button
             onClick={() => setMode('login')}
-            style={{ ...tabBase, background: mode === 'login' ? 'var(--accent)' : 'transparent', color: mode === 'login' ? '#fff' : 'var(--text-muted)' }}
-          >Log In with ID</button>
+            style={{
+              flex: 1,
+              padding: '8px 0',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: 'none',
+              borderRadius: '9999px',
+              transition: 'all 0.15s ease',
+              background: mode === 'login' ? 'var(--accent)' : 'transparent',
+              color: mode === 'login' ? '#FFFFFF' : 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
+            }}
+          >
+            <LogIn size={13} />
+            <span>Log In with ID</span>
+          </button>
         </div>
 
         {mode === 'create' ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* ID Display */}
-            <div style={{ textAlign: 'center', background: 'var(--surface-2)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
-              <p style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Your Generated User ID</p>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '32px', fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.12em' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            {/* Generated ID Container (Proton Token Display) */}
+            <div style={{
+              textAlign: 'center',
+              background: 'var(--surface-2)',
+              padding: '16px 14px',
+              borderRadius: '12px',
+              border: '1px solid var(--border)'
+            }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '11px',
+                fontWeight: 600,
+                color: 'var(--text-muted)',
+                marginBottom: '8px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em'
+              }}>
+                <KeyRound size={12} color="var(--accent)" />
+                <span>Generated 24h Cipher ID</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                <span style={{
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fontSize: '28px',
+                  fontWeight: 800,
+                  color: 'var(--accent)',
+                  letterSpacing: '0.12em'
+                }}>
                   {generatedId}
                 </span>
+
                 <button
                   onClick={() => setGeneratedId(generateUserId())}
                   title="Generate new ID"
-                  style={{ background: 'var(--surface-3)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', transition: 'color 0.15s' }}
-                  onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                  style={{
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    padding: '8px',
+                    cursor: 'pointer',
+                    color: 'var(--text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.borderColor = 'var(--field-hover)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
                 >
-                  <RefreshCw size={16} />
+                  <RefreshCw size={14} />
                 </button>
               </div>
-              <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '6px' }}>Save this ID to log back in anytime</p>
+
+              <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '6px' }}>
+                Keep this ID to log back in from another device
+              </p>
             </div>
 
-            {/* Username / Display name input (Mandatory) */}
+            {/* Username Field */}
             <div>
               <label className="label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>Username / Name</span>
+                <span>Username / Alias</span>
                 <span style={{ color: 'var(--accent)', fontSize: '11px', fontWeight: 600 }}>* REQUIRED</span>
               </label>
               <input
@@ -111,48 +199,89 @@ export default function UserSetup() {
                 type="text"
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
-                placeholder="Enter your username (e.g. Alex)"
+                placeholder="Enter your chat alias (e.g. Alex)"
                 maxLength={30}
                 required
                 onKeyDown={e => e.key === 'Enter' && handleCreate()}
               />
             </div>
 
+            {/* Submit CTA */}
             <button
               className="btn-primary"
               onClick={handleCreate}
               disabled={loading || !displayName.trim()}
-              style={{ opacity: !displayName.trim() ? 0.5 : 1 }}
+              style={{ opacity: !displayName.trim() ? 0.45 : 1, padding: '12px 20px' }}
             >
-              {loading
-                ? <><span style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', display: 'inline-block', animation: 'spin 0.8s linear infinite' }} /><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>Creating...</>
-                : <><UserCheck size={16} /> Get Started <ArrowRight size={15} /></>}
+              {loading ? (
+                <>
+                  <span style={{
+                    width: 14, height: 14, borderRadius: '50%',
+                    border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff',
+                    display: 'inline-block', animation: 'spin 0.8s linear infinite'
+                  }} />
+                  <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+                  Initializing...
+                </>
+              ) : (
+                <>
+                  <UserCheck size={16} />
+                  <span>Start Private Messaging</span>
+                  <ArrowRight size={14} />
+                </>
+              )}
             </button>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <div>
-              <label className="label">Enter Your 6-Char User ID</label>
+              <label className="label">Enter Your 6-Character ID</label>
               <input
                 className="input-field font-mono"
-                style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '0.15em', fontWeight: 700 }}
+                style={{
+                  textAlign: 'center',
+                  fontSize: '22px',
+                  letterSpacing: '0.15em',
+                  fontWeight: 700,
+                  padding: '12px 14px'
+                }}
                 type="text"
                 value={loginId}
                 onChange={e => setLoginId(e.target.value.toLowerCase())}
-                placeholder="ENTER USER ID"
+                placeholder="ABC123"
                 maxLength={6}
                 onKeyDown={e => e.key === 'Enter' && handleLogin()}
               />
-              <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '6px' }}>Format: 3 letters + 3 numbers (e.g. nrg483)</p>
+              <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '6px', textAlign: 'center' }}>
+                Format: 3 letters + 3 digits (e.g. ocu565)
+              </p>
             </div>
 
-            <button className="btn-primary" onClick={handleLogin} disabled={loading || loginId.length < 6}>
-              {loading
-                ? <><span style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', display: 'inline-block', animation: 'spin 0.8s linear infinite' }} />Logging in...</>
-                : <>Log In to Account <ArrowRight size={15} /></>}
+            <button
+              className="btn-primary"
+              onClick={handleLogin}
+              disabled={loading || loginId.length < 6}
+              style={{ padding: '12px 20px' }}
+            >
+              {loading ? (
+                <>
+                  <span style={{
+                    width: 14, height: 14, borderRadius: '50%',
+                    border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff',
+                    display: 'inline-block', animation: 'spin 0.8s linear infinite'
+                  }} />
+                  Authenticating...
+                </>
+              ) : (
+                <>
+                  <span>Unlock Identity</span>
+                  <ArrowRight size={14} />
+                </>
+              )}
             </button>
           </div>
         )}
+
       </div>
     </div>
   );

@@ -120,57 +120,63 @@ export default function SecretLinkPage() {
 
   return (
     <div style={{
-      minHeight: '100vh', background: '#07070d', display: 'flex', flexDirection: 'column',
+      minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center', padding: '24px',
-      fontFamily: 'Inter, sans-serif', color: '#fff', position: 'relative'
+      fontFamily: 'inherit', color: 'var(--text)', position: 'relative'
     }}>
       <div style={{ width: '100%', maxWidth: '480px' }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{
-            width: 56, height: 56, borderRadius: '14px',
-            background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
+            width: 52, height: 52, borderRadius: 'var(--radius)',
+            background: 'var(--danger-dim)', border: '1px solid rgba(255,71,71,0.3)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
           }}>
-            <Flame size={26} color="#ef4444" />
+            <Flame size={24} color="var(--danger)" />
           </div>
-          <h1 style={{ fontSize: '22px', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '6px' }}>Self-Destruct Message</h1>
-          <p style={{ fontSize: '13px', color: '#64748b' }}>This message will be permanently destroyed after you read it.</p>
+          <h1 style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: '6px', color: 'var(--text)' }}>
+            Self-Destruct Message
+          </h1>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+            This message will be permanently dissolved into dust after you read it.
+          </p>
         </div>
 
         <div style={{
-          background: '#10101a', border: '1px solid #282842', borderRadius: '16px',
-          padding: '28px', textAlign: 'center', position: 'relative', overflow: 'hidden'
+          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)',
+          padding: '28px', textAlign: 'center', position: 'relative', overflow: 'hidden',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.35)'
         }}>
 
           {state === 'loading' && (
-            <div style={{ color: '#64748b' }}>Verifying link…</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Verifying link cryptographic token…</div>
           )}
 
           {state === 'ready' && (
             <>
-              <div style={{ marginBottom: '20px' }}>
+              <div style={{ marginBottom: '24px' }}>
                 <Lock size={32} color="var(--accent)" style={{ margin: '0 auto 12px' }} />
-                <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.6 }}>
-                  You have received a secret encrypted message. Once revealed, it self-destructs with zero trace.
+                <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                  You have received an encrypted one-time note. Once revealed, the particle disintegration engine destroys it permanently.
                 </p>
               </div>
               <button
                 onClick={handleReveal}
                 style={{
-                  background: 'var(--danger)', color: '#fff', border: 'none', borderRadius: '10px',
-                  padding: '14px 28px', fontSize: '15px', fontWeight: 700, cursor: 'pointer',
+                  background: 'var(--danger)', color: '#FFFFFF', border: 'none', borderRadius: 'var(--radius-pill)',
+                  padding: '12px 28px', fontSize: '14px', fontWeight: 700, cursor: 'pointer',
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  boxShadow: '0 4px 16px rgba(239,68,68,0.3)',
+                  boxShadow: '0 4px 14px rgba(255,71,71,0.3)',
+                  transition: 'all 0.15s ease'
                 }}
               >
-                <Flame size={18} /> Reveal & Destroy Message
+                <Flame size={16} /> Reveal & Destroy Message
               </button>
             </>
           )}
 
           {state === 'reading' && (
-            <div style={{ color: '#64748b' }}>Decrypting…</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Decrypting payload…</div>
           )}
 
           {(state === 'read' || state === 'snapping') && (
@@ -178,16 +184,16 @@ export default function SecretLinkPage() {
               <div
                 ref={cardRef}
                 style={{
-                  background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.35)',
-                  borderRadius: '12px', padding: '20px', marginBottom: '20px', textAlign: 'left'
+                  background: 'var(--danger-dim)', border: '1px solid rgba(255,71,71,0.35)',
+                  borderRadius: 'var(--radius)', padding: '20px', marginBottom: '20px', textAlign: 'left'
                 }}
               >
-                <p style={{ fontSize: '15px', lineHeight: 1.7, whiteSpace: 'pre-wrap', color: '#fff', wordBreak: 'break-word' }}>
+                <p style={{ fontSize: '15px', lineHeight: 1.7, whiteSpace: 'pre-wrap', color: 'var(--text)', wordBreak: 'break-word' }}>
                   {message}
                 </p>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#ef4444' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--danger)' }}>
                 <Flame size={16} />
                 <span style={{ fontSize: '13px', fontWeight: 700 }}>
                   {state === 'snapping' ? 'Disintegrating…' : `Self-destructing in ${countdown} second${countdown !== 1 ? 's' : ''}…`}
@@ -198,9 +204,9 @@ export default function SecretLinkPage() {
 
           {(state === 'destroyed' || state === 'expired') && (
             <>
-              <Flame size={40} color="#ef4444" style={{ margin: '0 auto 16px', display: 'block' }} />
-              <p style={{ fontSize: '18px', fontWeight: 800, marginBottom: '6px', color: '#fff' }}>Message Deleted</p>
-              <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '20px', lineHeight: 1.5 }}>
+              <Flame size={40} color="var(--danger)" style={{ margin: '0 auto 16px', display: 'block' }} />
+              <p style={{ fontSize: '20px', fontWeight: 800, marginBottom: '6px', color: 'var(--text)' }}>Message Deleted</p>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.5 }}>
                 This one-time message was viewed and permanently deleted.
               </p>
               <a href="/" style={{ color: 'var(--accent)', fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}>
@@ -211,8 +217,8 @@ export default function SecretLinkPage() {
 
           {state === 'error' && (
             <>
-              <AlertTriangle size={36} color="#ef4444" style={{ margin: '0 auto 16px', display: 'block' }} />
-              <p style={{ fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>Invalid Link</p>
+              <AlertTriangle size={36} color="var(--danger)" style={{ margin: '0 auto 16px', display: 'block' }} />
+              <p style={{ fontSize: '16px', fontWeight: 700, marginBottom: '8px', color: 'var(--text)' }}>Invalid Link</p>
               <a href="/" style={{ color: 'var(--accent)', fontSize: '13px', textDecoration: 'none' }}>← Return to VanishChat</a>
             </>
           )}

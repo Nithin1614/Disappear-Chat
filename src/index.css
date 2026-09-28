@@ -1,68 +1,78 @@
 /* ===== Google Fonts ===== */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @import "tailwindcss";
 
-/* ===== Design Tokens — Cyber Violet (Electric Violet Accent) ===== */
+/* ===== Design Tokens — Proton Mail "Carbon" Design System ===== */
 :root {
-  --bg: #07070d;
-  --surface: #10101a;
-  --surface-2: #171726;
-  --surface-3: #212136;
-  --border: #282842;
-  --border-light: #363659;
+  /* Proton Canvas & Surfaces */
+  --bg: #13131A;               /* Deep Carbon canvas */
+  --surface: #1B1B24;          /* Primary cards & panels */
+  --surface-2: #242432;        /* Secondary containers & inputs */
+  --surface-3: #2F2F40;        /* Hover surface & active elements */
+  --border: #2A2A38;           /* 1px structural hairline border */
+  --border-light: #21212C;     /* Subtle internal dividers */
+  --field-norm: #353547;       /* Form input resting border */
+  --field-hover: #4A4A60;      /* Form input hover border */
 
-  --text: #ffffff;
-  --text-muted: #a0aec0;
-  --text-dim: #64748b;
+  /* Proton Typography */
+  --text: #F5F5F7;             /* Clean, high-contrast off-white */
+  --text-muted: #A7A5A3;       /* Neutral slate body text */
+  --text-dim: #757371;         /* Metadata, helper hints */
 
-  --accent: #8b5cf6;
-  --accent-hover: #7c3aed;
-  --accent-dim: rgba(139, 92, 246, 0.16);
-  --accent-border: rgba(139, 92, 246, 0.42);
+  /* Proton Signature Electric Violet */
+  --accent: #6D4AFF;           /* Signature Proton Purple */
+  --accent-hover: #5835E5;     /* Darker hover state */
+  --accent-active: #4925D4;    /* Pressed state */
+  --accent-dim: rgba(109, 74, 255, 0.14);
+  --accent-border: rgba(109, 74, 255, 0.35);
 
-  --cyan: #06b6d4;
-  --cyan-dim: rgba(6, 182, 212, 0.15);
+  /* Proton Signals */
+  --success: #00C48C;          /* Proton Verified Emerald */
+  --success-dim: rgba(0, 196, 140, 0.12);
+  --warning: #F59E0B;          /* Amber */
+  --danger: #FF4747;           /* Signal red */
+  --danger-dim: rgba(255, 71, 71, 0.12);
+  --info: #0085FF;             /* Cobalt Blue */
 
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --info: #8b5cf6;
-
-  --radius-sm: 8px;
-  --radius: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
+  /* Radii */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-pill: 9999px;
 }
 
-/* ===== Design Tokens — Light (Cyber Purple Accent) ===== */
+/* ===== Design Tokens — Proton Swiss Light Mode ===== */
 [data-theme="light"] {
-  --bg: #f8fafc;
-  --surface: #ffffff;
-  --surface-2: #f1f5f9;
-  --surface-3: #e2e8f0;
-  --border: #cbd5e1;
-  --border-light: #94a3b8;
+  --bg: #F5F4F2;               /* Warm Swiss paper canvas */
+  --surface: #FFFFFF;          /* Pure white cards */
+  --surface-2: #EBEAE7;        /* Secondary panel tint */
+  --surface-3: #DDDCD8;        /* Hover surface */
+  --border: #E5E4E1;           /* Crisp grey borders */
+  --border-light: #F0EFEB;     /* Subtle divider */
+  --field-norm: #ADABA8;
+  --field-hover: #8F8D8A;
 
-  --text: #0f172a;
-  --text-muted: #475569;
-  --text-dim: #64748b;
+  --text: #0C0C14;             /* High contrast deep black */
+  --text-muted: #706D6B;       /* Secondary neutral text */
+  --text-dim: #8F8D8A;
 
-  --accent: #7c3aed;
-  --accent-hover: #6d28d9;
-  --accent-dim: rgba(124, 58, 237, 0.1);
-  --accent-border: rgba(124, 58, 237, 0.3);
+  --accent: #6D4AFF;
+  --accent-hover: #5835E5;
+  --accent-active: #4925D4;
+  --accent-dim: #F0EDFF;
+  --accent-border: rgba(109, 74, 255, 0.25);
 
-  --cyan: #0891b2;
-  --cyan-dim: rgba(8, 145, 178, 0.1);
-
-  --success: #16a34a;
-  --warning: #d97706;
-  --danger: #dc2626;
-  --info: #7c3aed;
+  --success: #00A370;
+  --success-dim: rgba(0, 163, 112, 0.1);
+  --warning: #D97706;
+  --danger: #DC2626;
+  --danger-dim: rgba(220, 38, 38, 0.1);
+  --info: #0085FF;
 }
 
-/* ===== Reset ===== */
+/* ===== Global Reset ===== */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -76,35 +86,33 @@ html, body {
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
+  letter-spacing: -0.01em;
 }
 
 .font-mono {
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
-/* ===== Scrollbar ===== */
-::-webkit-scrollbar { width: 5px; }
+/* ===== Proton Scrollbar ===== */
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--field-hover); }
 
 /* ===== Selection ===== */
-::selection { background: rgba(139, 92, 246, 0.35); }
+::selection { background: rgba(109, 74, 255, 0.3); color: #FFFFFF; }
 
-/* ===== Focus ===== */
+/* ===== Focus States ===== */
 input:focus, textarea:focus, button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-/* ===== Inputs ===== */
-input::placeholder, textarea::placeholder {
-  color: var(--text-dim);
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(109, 74, 255, 0.22);
 }
 
 /* ===== Range Input ===== */
@@ -124,34 +132,34 @@ input[type="range"]::-webkit-slider-thumb {
   border-radius: 50%;
   background: var(--accent);
   cursor: pointer;
-  border: 2px solid var(--bg);
+  border: 2px solid var(--surface);
   box-shadow: 0 0 0 1px var(--accent);
 }
 
 /* ===== Animations ===== */
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.animate-fade-up { animation: fade-up 0.3s ease forwards; }
+.animate-fade-up { animation: fade-up 0.25s ease forwards; }
 
 @keyframes slide-in-right {
-  from { opacity: 0; transform: translateX(16px); }
+  from { opacity: 0; transform: translateX(12px); }
   to   { opacity: 1; transform: translateX(0); }
 }
-.animate-slide-in-right { animation: slide-in-right 0.25s ease forwards; }
+.animate-slide-in-right { animation: slide-in-right 0.2s ease forwards; }
 
 @keyframes scale-in {
-  from { opacity: 0; transform: scale(0.95); }
+  from { opacity: 0; transform: scale(0.97); }
   to   { opacity: 1; transform: scale(1); }
 }
-.animate-scale-in { animation: scale-in 0.2s ease forwards; }
+.animate-scale-in { animation: scale-in 0.18s ease forwards; }
 
 @keyframes fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
-.animate-fade-in { animation: fade-in 0.4s ease forwards; }
+.animate-fade-in { animation: fade-in 0.3s ease forwards; }
 
 @keyframes thanos-disintegrate {
   0% { opacity: 1; transform: scale(1) translateY(0) rotate(0deg); filter: blur(0px); }
@@ -163,47 +171,59 @@ input[type="range"]::-webkit-slider-thumb {
   animation: thanos-disintegrate 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
-/* ===== Utility ===== */
+/* ===== Proton Standard UI Classes ===== */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
+/* Proton Primary Button (Signature Pill CTA) */
 .btn-primary {
   background: var(--accent);
-  color: #ffffff;
+  color: #FFFFFF;
   border: none;
-  border-radius: var(--radius-sm);
-  padding: 12px 20px;
+  border-radius: var(--radius-pill);
+  padding: 10px 22px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  transition: all 0.15s ease-in-out;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   width: 100%;
-  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.25);
+  box-shadow: 0 2px 8px rgba(109, 74, 255, 0.25);
 }
 .btn-primary:hover:not(:disabled) {
   background: var(--accent-hover);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 4px 14px rgba(109, 74, 255, 0.35);
+  transform: translateY(-1px);
 }
-.btn-primary:active:not(:disabled) { transform: scale(0.98); }
-.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+.btn-primary:active:not(:disabled) {
+  background: var(--accent-active);
+  transform: translateY(0);
+}
+.btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
 
+/* Proton Secondary / Ghost Button */
 .btn-ghost {
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 12px 20px;
+  border-radius: var(--radius-pill);
+  padding: 10px 20px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: all 0.15s ease-in-out;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -212,49 +232,73 @@ input[type="range"]::-webkit-slider-thumb {
 }
 .btn-ghost:hover:not(:disabled) {
   background: var(--surface-2);
-  color: var(--text);
+  border-color: var(--field-hover);
 }
 .btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* Proton Form Input */
 .input-field {
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--field-norm);
+  border-radius: var(--radius);
   color: var(--text);
-  padding: 12px 14px;
+  padding: 10px 14px;
   font-size: 14px;
   font-family: inherit;
   width: 100%;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.input-field:hover {
+  border-color: var(--field-hover);
 }
 .input-field:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(109, 74, 255, 0.22);
   outline: none;
+}
+.input-field::placeholder {
+  color: var(--text-dim);
 }
 
 .label {
   display: block;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-muted);
   margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
+}
+
+/* Proton Security Verified Badge */
+.proton-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--success-dim);
+  color: var(--success);
+  border: 1px solid rgba(0, 196, 140, 0.25);
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
+  gap: 5px;
+  font-size: 12px;
   font-weight: 500;
-  padding: 3px 8px;
-  border-radius: 100px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
 }
 
 .divider {
   height: 1px;
-  background: var(--border);
+  background: var(--border-light);
 }
 
 /* Screenshot deterrent */
