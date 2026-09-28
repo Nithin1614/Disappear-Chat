@@ -17,6 +17,7 @@ import { useClipboardAutoClear } from '../hooks/useClipboardAutoClear';
 import { useAccessLock } from '../hooks/useAccessLock';
 import { useMultiTabProtection } from '../hooks/useMultiTabProtection';
 import { SUPPORTED_IMAGE_TYPES, TIMER_WARNING_SECONDS, MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB } from '../lib/constants';
+import { getAppOrigin } from '../lib/appUrl';
 import Header from '../components/ui/Header';
 import MessageBubble from '../components/chat/MessageBubble';
 import MessageInput from '../components/chat/MessageInput';
@@ -449,7 +450,7 @@ export default function ChatPage() {
   // Scroll in messages resets dead man switch
   const handleMessagesScroll = useCallback(() => resetDmsActivity(), [resetDmsActivity]);
 
-  const roomUrl = `${window.location.origin}/room/${roomCode}${window.location.hash}`;
+  const roomUrl = `${getAppOrigin()}/room/${roomCode}`;
 
   // Feature 7: Multi-tab block — show before anything else
   if (isBlocked) return <MultiTabBlockScreen roomCode={roomCode} />;

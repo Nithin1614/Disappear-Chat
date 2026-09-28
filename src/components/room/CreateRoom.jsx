@@ -4,6 +4,7 @@ import { Plus, Copy, Check, Clock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { generateRoomCode } from '../../lib/userIdGenerator';
 import { generateEncryptionKey } from '../../lib/crypto';
+import { getAppOrigin } from '../../lib/appUrl';
 import { useUser } from '../../context/UserContext';
 import { useToast } from '../../context/ToastContext';
 
@@ -38,7 +39,6 @@ export default function CreateRoom() {
     setLoading(true);
     try {
       const roomCode = generateRoomCode();
-      const key = await generateEncryptionKey(roomCode);
       const { data, error } = await supabase.from('rooms').insert({
         room_code: roomCode, created_by: userId,
         duration_minutes: duration, max_members: mode === 'private' ? 2 : maxMembers,
@@ -46,7 +46,7 @@ export default function CreateRoom() {
       }).select().single();
       if (error) throw error;
       await supabase.from('room_members').insert({ room_id: data.id, user_id: userId, is_online: true });
-      const url = `${window.location.origin}/room/${roomCode}#key=${key}`;
+      const url = `${getAppOrigin()}/room/${roomCode}`;
       setCreated({ roomCode, url });
       addToast('Room created! Share the link.', 'success');
     } catch (err) {
@@ -69,7 +69,7 @@ export default function CreateRoom() {
           <Check size={22} color="var(--success)" />
         </div>
         <p style={{ fontWeight: 600, fontSize: '16px', color: 'var(--text)' }}>Room Ready</p>
-        <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>Share the link — the key is embedded in it</p>
+        <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>Share this link or room code with your partner</p>
       </div>
 
       <div style={{ textAlign: 'center' }}>

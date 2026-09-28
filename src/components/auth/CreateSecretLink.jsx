@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Flame, Copy, Check, Link } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { getAppOrigin } from '../../lib/appUrl';
 
 // Derive AES key from token
 async function deriveKeyFromToken(token) {
@@ -64,7 +65,7 @@ export default function CreateSecretLink() {
 
       if (error) throw error;
 
-      const url = `${window.location.origin}/s/${token}`;
+      const url = `${getAppOrigin()}/s/${token}`;
       setGeneratedUrl(url);
       setMessageText('');
     } catch (err) {
