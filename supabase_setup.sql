@@ -117,6 +117,33 @@ AFTER INSERT ON public.room_members
 FOR EACH ROW
 EXECUTE FUNCTION public.start_room_timer();
 
+-- 9b. TRIGGER TO START ROOM TIMER ON FIRST MESSAGE
+CREATE OR REPLACE FUNCTION public.start_room_timer_on_message()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  room_rec record;
+BEGIN
+  SELECT * INTO room_rec FROM public.rooms WHERE id = NEW.room_id;
+  IF room_rec.timer_started IS NOT TRUE THEN
+    UPDATE public.rooms
+    SET timer_started = true,
+        expires_at = now() + (room_rec.duration_minutes || ' minutes')::interval
+    WHERE id = NEW.room_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_start_room_timer_on_message ON public.messages;
+CREATE TRIGGER trg_start_room_timer_on_message
+AFTER INSERT ON public.messages
+FOR EACH ROW
+EXECUTE FUNCTION public.start_room_timer_on_message();
+
 -- 10. CLEANUP HELPER FUNCTIONS (Zero security warnings)
 CREATE OR REPLACE FUNCTION public.cleanup_expired_rooms()
 RETURNS void

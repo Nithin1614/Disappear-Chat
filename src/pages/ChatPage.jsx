@@ -268,6 +268,27 @@ export default function ChatPage() {
     return () => clearInterval(pollInterval);
   }, [roomCode, userId, displayName]);
 
+  // Real-time subscription to room updates (instant sync when timer starts or expiresAt updates)
+  useEffect(() => {
+    if (!room?.id) return;
+    const roomChannel = supabase
+      .channel(`room_status_${room.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${room.id}` },
+        (payload) => {
+          if (payload.new) {
+            setRoom(prev => ({ ...prev, ...payload.new }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(roomChannel);
+    };
+  }, [room?.id]);
+
   // Mark offline on leave
   useEffect(() => {
     if (!room?.id || !userId) return;
@@ -388,6 +409,40 @@ export default function ChatPage() {
     }
   }, [countdown.isExpired, countdown.timerStarted, countdown.inGracePeriod, snapTriggered, triggerSnap]);
 
+  // Start countdown timer on first message
+  const ensureRoomTimerStarted = useCallback(async () => {
+    if (!room?.id || room.timer_started || room.expires_at) return;
+    const duration = room.duration_minutes || 30;
+    const expiresAt = new Date(Date.now() + duration * 60 * 1000).toISOString();
+
+    // Optimistically update local room state immediately (0ms visual start)
+    setRoom(prev => ({
+      ...prev,
+      timer_started: true,
+      expires_at: expiresAt
+    }));
+
+    try {
+      await supabase
+        .from('rooms')
+        .update({
+          timer_started: true,
+          expires_at: expiresAt
+        })
+        .eq('id', room.id)
+        .eq('timer_started', false);
+    } catch (err) {
+      console.error('[ChatPage] Error starting room timer on first message:', err);
+    }
+  }, [room]);
+
+  // If any message arrives or exists in room and timer hasn't started, activate it
+  useEffect(() => {
+    if (messages.length > 0 && room && !room.timer_started && !room.expires_at) {
+      ensureRoomTimerStarted();
+    }
+  }, [messages.length, room, ensureRoomTimerStarted]);
+
   // Send text message — use forward secrecy session key when available
   const handleSendMessage = useCallback(async (text, burnAfterRead = false) => {
     if (!keyLoaded || !room?.id) {
@@ -396,6 +451,7 @@ export default function ChatPage() {
     }
     try {
       resetDmsActivity(); // Reset dead man switch on message send
+      ensureRoomTimerStarted(); // Start countdown timer on first message
       const result = await effectiveEncrypt(text);
       const { ciphertext, iv, epoch } = result;
       await sendMessage({ encryptedContent: ciphertext, iv, type: 'text', senderId: userId, burnAfterRead, keyEpoch: epoch || null });
@@ -404,13 +460,14 @@ export default function ChatPage() {
       addToast(err.message || 'Failed to send message', 'error');
       throw err;
     }
-  }, [keyLoaded, room?.id, effectiveEncrypt, sendMessage, userId, resetDmsActivity, addToast]);
+  }, [keyLoaded, room?.id, effectiveEncrypt, sendMessage, userId, resetDmsActivity, ensureRoomTimerStarted, addToast]);
 
   // Send file (with optional burn after read)
   const handleSendFile = useCallback(async (file, burnAfterRead = false) => {
     if (!keyLoaded || !room?.id) return;
     if (file.size > MAX_FILE_SIZE_BYTES) { addToast(`File too large. Max ${MAX_FILE_SIZE_MB}MB.`, 'error'); return; }
     try {
+      ensureRoomTimerStarted(); // Start countdown timer on first file
       const isImg = SUPPORTED_IMAGE_TYPES.includes(file.type);
       const buf = await file.arrayBuffer();
       const { encryptedData, iv: fileIv } = await encryptFileHook(buf);
@@ -430,7 +487,7 @@ export default function ChatPage() {
       });
       addToast('File sent!', 'success');
     } catch (err) { addToast(err.message || 'Failed to send file', 'error'); }
-  }, [keyLoaded, room?.id, encryptFileHook, encrypt, sendMessage, userId, addToast]);
+  }, [keyLoaded, room?.id, encryptFileHook, encrypt, sendMessage, userId, ensureRoomTimerStarted, addToast]);
 
   // Download file with real cryptoKey
   const handleDownloadFile = useCallback(async (message) => {
