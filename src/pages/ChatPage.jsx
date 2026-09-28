@@ -59,6 +59,7 @@ export default function ChatPage() {
   const [fingerprintWarning, setFingerprintWarning] = useState(null); // { userId, displayName }
   const [dmsCountdown, setDmsCountdown] = useState(0); // Dead Man Switch final countdown
 
+  const chatPageRef = useRef(null);
   const chatContainerRef = useRef(null);
   const messagesEndRef = useRef(null);
   const prevMessageCountRef = useRef(0);
@@ -288,6 +289,39 @@ export default function ChatPage() {
       supabase.removeChannel(roomChannel);
     };
   }, [room?.id]);
+
+  // WhatsApp-grade keyboard & viewport height lock via Visual Viewport API
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return;
+
+    const handleViewportChange = () => {
+      if (chatPageRef.current && window.visualViewport) {
+        // Pin the root container's height to the exact visible viewport (subtracts virtual keyboard)
+        chatPageRef.current.style.height = `${window.visualViewport.height}px`;
+      }
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+
+    window.visualViewport.addEventListener('resize', handleViewportChange);
+    window.visualViewport.addEventListener('scroll', handleViewportChange);
+
+    handleViewportChange();
+
+    return () => {
+      window.visualViewport.removeEventListener('resize', handleViewportChange);
+      window.visualViewport.removeEventListener('scroll', handleViewportChange);
+    };
+  }, []);
+
+  const handleInputFocus = useCallback(() => {
+    setTimeout(() => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 120);
+  }, []);
 
   // Mark offline on leave
   useEffect(() => {
@@ -575,7 +609,20 @@ export default function ChatPage() {
   }
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' }}>
+    <div
+      ref={chatPageRef}
+      className="chat-viewport-root"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--bg)',
+        overflow: 'hidden',
+        position: 'fixed',
+        inset: 0,
+        width: '100%',
+        touchAction: 'manipulation'
+      }}
+    >
       <Header />
       <ScreenshotGuard />
 
@@ -820,6 +867,7 @@ export default function ChatPage() {
           onSendMessage={handleSendMessage}
           onSendFile={handleSendFile}
           onTyping={handleTyping}
+          onFocus={handleInputFocus}
           disabled={countdown.isExpired}
         />
       </div>

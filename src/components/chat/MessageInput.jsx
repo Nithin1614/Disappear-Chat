@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Paperclip, X, Image as ImageIcon, File, Flame } from 'lucide-react';
 import { MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB, SUPPORTED_IMAGE_TYPES } from '../../lib/constants';
 
-export default function MessageInput({ onSendMessage, onSendFile, onTyping, disabled }) {
+export default function MessageInput({ onSendMessage, onSendFile, onTyping, onFocus, disabled }) {
   const [text, setText] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [sending, setSending] = useState(false);
@@ -127,10 +127,14 @@ export default function MessageInput({ onSendMessage, onSendFile, onTyping, disa
             background: burnMode ? 'rgba(239,68,68,0.07)' : 'var(--surface-2)',
             border: burnMode ? '1px solid rgba(239,68,68,0.35)' : '1px solid var(--border)',
             borderRadius: '10px',
-            color: 'var(--text)', padding: '10px 14px', fontSize: '14px', fontFamily: 'inherit', lineHeight: '1.4',
+            color: 'var(--text)', padding: '10px 14px', fontSize: '16px', fontFamily: 'inherit', lineHeight: '1.4',
             outline: 'none', transition: 'border-color 0.15s', opacity: disabled ? 0.4 : 1,
+            touchAction: 'manipulation'
           }}
-          onFocus={e => e.target.style.borderColor = burnMode ? 'rgba(239,68,68,0.6)' : 'var(--accent)'}
+          onFocus={e => {
+            e.target.style.borderColor = burnMode ? 'rgba(239,68,68,0.6)' : 'var(--accent)';
+            if (onFocus) onFocus();
+          }}
           onBlur={e => e.target.style.borderColor = burnMode ? 'rgba(239,68,68,0.35)' : 'var(--border)'}
         />
 

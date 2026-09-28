@@ -81,8 +81,15 @@
 
 html, body {
   scroll-behavior: smooth;
-  overscroll-behavior-y: smooth;
+  overscroll-behavior-y: none;
   -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+button, a, input, textarea, select {
+  touch-action: manipulation;
 }
 
 body {
@@ -327,4 +334,29 @@ input[type="range"]::-webkit-slider-thumb {
   .mobile-only { display: none !important; }
   .mobile-flex { display: none !important; }
 }
+
+/* ===== Prevent Mobile Auto-Zoom on Input Focus ===== */
+/* iOS Safari automatically zooms the page if input font-size < 16px */
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select,
+  .input-field {
+    font-size: 16px !important;
+  }
+}
+
+/* ===== WhatsApp-Style Mobile Chat Viewport Lock ===== */
+.chat-viewport-root {
+  height: 100dvh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+}
+
 
