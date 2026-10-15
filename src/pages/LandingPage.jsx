@@ -609,10 +609,10 @@ export default function LandingPage() {
                 <Flame size={18} color="var(--danger)" />
               </div>
               <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>
-                Thanos Particle Disintegration
+                Self-Destructing Messages
               </h3>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                Experience physical pixel dispersion. When a message self-destructs, an authentic 32-canvas particle engine dissolves the text before permanent deletion.
+                Set messages to disappear after they're read. When the timer runs out, messages cleanly dissolve off your screen and are permanently wiped with zero backups.
               </p>
             </div>
             <div style={{
@@ -624,7 +624,7 @@ export default function LandingPage() {
               fontWeight: 600,
               color: 'var(--danger)'
             }}>
-              <Flame size={13} /> Mathematical irreversible erasure
+              <Flame size={13} /> Permanently erased on timer
             </div>
           </div>
 
