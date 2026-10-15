@@ -61,6 +61,7 @@ export default function ChatPage() {
 
   const chatPageRef = useRef(null);
   const chatContainerRef = useRef(null);
+  const chatMessagesAreaRef = useRef(null);
   const messagesEndRef = useRef(null);
   const prevMessageCountRef = useRef(0);
   const prevMemberCountRef = useRef(0);
@@ -294,31 +295,31 @@ export default function ChatPage() {
   useEffect(() => {
     if (typeof window === 'undefined' || !window.visualViewport) return;
 
-    const handleViewportChange = () => {
+    const handleViewportResize = () => {
       if (chatPageRef.current && window.visualViewport) {
         // Pin the root container's height to the exact visible viewport (subtracts virtual keyboard)
         chatPageRef.current.style.height = `${window.visualViewport.height}px`;
       }
-      if (messagesEndRef.current) {
-        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      // Instant scrollTop assignment inside chat messages area — zero window scroll conflict,
+      // zero focus stealing, and prevents smooth scrolling from dismissing the mobile keyboard
+      if (chatMessagesAreaRef.current) {
+        chatMessagesAreaRef.current.scrollTop = chatMessagesAreaRef.current.scrollHeight;
       }
     };
 
-    window.visualViewport.addEventListener('resize', handleViewportChange);
-    window.visualViewport.addEventListener('scroll', handleViewportChange);
-
-    handleViewportChange();
+    window.visualViewport.addEventListener('resize', handleViewportResize);
+    handleViewportResize();
 
     return () => {
-      window.visualViewport.removeEventListener('resize', handleViewportChange);
-      window.visualViewport.removeEventListener('scroll', handleViewportChange);
+      window.visualViewport.removeEventListener('resize', handleViewportResize);
     };
   }, []);
 
   const handleInputFocus = useCallback(() => {
+    // When input is focused on mobile, scroll message container to bottom without window scroll animation
     setTimeout(() => {
-      if (messagesEndRef.current) {
-        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      if (chatMessagesAreaRef.current) {
+        chatMessagesAreaRef.current.scrollTop = chatMessagesAreaRef.current.scrollHeight;
       }
     }, 120);
   }, []);
@@ -397,7 +398,9 @@ export default function ChatPage() {
 
   // Auto-scroll
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatMessagesAreaRef.current) {
+      chatMessagesAreaRef.current.scrollTop = chatMessagesAreaRef.current.scrollHeight;
+    }
   }, [messages, decryptedMessages]);
 
   // Mark messages as read
@@ -619,8 +622,7 @@ export default function ChatPage() {
         overflow: 'hidden',
         position: 'fixed',
         inset: 0,
-        width: '100%',
-        touchAction: 'manipulation'
+        width: '100%'
       }}
     >
       <Header />
@@ -791,6 +793,7 @@ export default function ChatPage() {
         {/* Messages area — wrapped to allow lock overlay positioning */}
         <div style={{ flex: 1, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
           <div
+            ref={chatMessagesAreaRef}
             className="chat-messages-area"
             onScroll={handleMessagesScroll}
             style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingTop: '16px', paddingBottom: '8px' }}

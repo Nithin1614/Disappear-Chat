@@ -80,16 +80,18 @@
 }
 
 html, body {
-  scroll-behavior: smooth;
   overscroll-behavior-y: none;
   -webkit-overflow-scrolling: touch;
-  touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
-button, a, input, textarea, select {
+button, a {
   touch-action: manipulation;
+}
+
+input, textarea, select {
+  touch-action: auto !important;
 }
 
 body {

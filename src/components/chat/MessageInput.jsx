@@ -122,6 +122,8 @@ export default function MessageInput({ onSendMessage, onSendFile, onTyping, onFo
           placeholder={selectedFile ? 'Add a caption...' : burnMode ? '🔥 Burn after read message...' : 'Type a message...'}
           disabled={disabled}
           rows={1}
+          inputMode="text"
+          autoComplete="off"
           style={{
             flex: 1, resize: 'none', maxHeight: '100px', overflowY: 'auto',
             background: burnMode ? 'rgba(239,68,68,0.07)' : 'var(--surface-2)',
@@ -129,7 +131,14 @@ export default function MessageInput({ onSendMessage, onSendFile, onTyping, onFo
             borderRadius: '10px',
             color: 'var(--text)', padding: '10px 14px', fontSize: '16px', fontFamily: 'inherit', lineHeight: '1.4',
             outline: 'none', transition: 'border-color 0.15s', opacity: disabled ? 0.4 : 1,
-            touchAction: 'manipulation'
+            touchAction: 'auto',
+            WebkitUserSelect: 'text',
+            userSelect: 'text'
+          }}
+          onClick={() => {
+            if (textareaRef.current && document.activeElement !== textareaRef.current) {
+              textareaRef.current.focus();
+            }
           }}
           onFocus={e => {
             e.target.style.borderColor = burnMode ? 'rgba(239,68,68,0.6)' : 'var(--accent)';
