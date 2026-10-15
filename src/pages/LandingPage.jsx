@@ -7,6 +7,7 @@ import {
 import { useUser } from '../context/UserContext';
 import UserSetup from '../components/auth/UserSetup';
 import Header from '../components/ui/Header';
+import VisualTransmission3D from '../components/effects/VisualTransmission3D';
 
 export default function LandingPage() {
   const { isAuthenticated, userId, displayName } = useUser();
@@ -363,13 +364,13 @@ export default function LandingPage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* DESKTOP-ONLY: SECTION 2 - HOW ZERO-ACCESS CRYPTOGRAPHY WORKS               */}
+      {/* SECTION 2 - 3D DUAL-DEVICE TRANSMISSION SIMULATOR (Mobile & Desktop)       */}
       {/* ========================================================================= */}
-      <section className="desktop-only" style={{
+      <section style={{
         background: 'var(--surface)',
         borderTop: '1px solid var(--border)',
         borderBottom: '1px solid var(--border)',
-        padding: '64px 24px'
+        padding: 'clamp(36px, 5vw, 56px) 24px clamp(44px, 6vw, 64px)'
       }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', textAlign: 'center' }}>
           <div style={{
@@ -382,334 +383,33 @@ export default function LandingPage() {
             border: '1px solid var(--border)',
             marginBottom: '14px'
           }}>
-            <Cpu size={12} color="var(--accent)" />
+            <Sparkles size={12} color="var(--accent)" />
             <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Security Architecture
+              Interactive Demonstration
             </span>
           </div>
 
           <h2 style={{
-            fontSize: '32px',
+            fontSize: 'clamp(24px, 4vw, 32px)',
             fontWeight: 800,
             letterSpacing: '-0.025em',
             marginBottom: '12px',
             color: 'var(--text)'
           }}>
-            How Zero-Access Messaging Works
+            How Private Messages Vanish
           </h2>
           <p style={{
-            fontSize: '15px',
+            fontSize: 'clamp(13px, 2vw, 15px)',
             color: 'var(--text-muted)',
             maxWidth: '560px',
-            margin: '0 auto 48px',
+            margin: '0 auto 24px',
             lineHeight: 1.55
           }}>
-            Your browser encrypts data before sending. No plaintext ever touches our infrastructure or transit pipelines.
+            Locked on your device, scrambled in transit, decrypted by the receiver, and permanently dissolved.
           </p>
 
-          {/* 3 Step Diagram Flow */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '24px',
-            textAlign: 'left'
-          }}>
-            {/* Step 1 */}
-            <div style={{
-              background: 'var(--bg)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '28px 24px'
-            }}>
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 36,
-                height: 36,
-                borderRadius: '10px',
-                background: 'var(--accent-dim)',
-                border: '1px solid var(--accent-border)',
-                marginBottom: '16px'
-              }}>
-                <LockKeyhole size={18} color="var(--accent)" />
-              </div>
-              <p style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
-                Stage 01
-              </p>
-              <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>
-                Client-Side Encryption
-              </h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                Messages and attachments are encrypted directly in your browser using the native Web Crypto API (AES-256-GCM + PBKDF2) before leaving your network.
-              </p>
-            </div>
-
-            {/* Step 2 */}
-            <div style={{
-              background: 'var(--bg)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '28px 24px'
-            }}>
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 36,
-                height: 36,
-                borderRadius: '10px',
-                background: 'rgba(0, 196, 140, 0.12)',
-                border: '1px solid rgba(0, 196, 140, 0.25)',
-                marginBottom: '16px'
-              }}>
-                <Zap size={18} color="var(--success)" />
-              </div>
-              <p style={{ fontSize: '11px', fontWeight: 700, color: 'var(--success)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
-                Stage 02
-              </p>
-              <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>
-                Zero-Knowledge Transit
-              </h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                Our relay nodes and database only handle opaque ciphertext and random IVs. Decryption keys live in the URL hash (<code style={{ color: 'var(--text)' }}>#key=</code>), which browsers never send to servers.
-              </p>
-            </div>
-
-            {/* Step 3 */}
-            <div style={{
-              background: 'var(--bg)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '28px 24px'
-            }}>
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 36,
-                height: 36,
-                borderRadius: '10px',
-                background: 'rgba(255, 71, 71, 0.12)',
-                border: '1px solid rgba(255, 71, 71, 0.25)',
-                marginBottom: '16px'
-              }}>
-                <Flame size={18} color="var(--danger)" />
-              </div>
-              <p style={{ fontSize: '11px', fontWeight: 700, color: 'var(--danger)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
-                Stage 03
-              </p>
-              <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>
-                Particle Disintegration
-              </h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                When countdown timers expire or a secret link is viewed, a physics-based particle shredder erases the message. Records are completely expunged with zero backups.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* DESKTOP-ONLY: SECTION 3 - PROTON BENTO GRID (Feature Highlights)          */}
-      {/* ========================================================================= */}
-      <section className="desktop-only" style={{
-        padding: '64px 24px',
-        maxWidth: '1100px',
-        margin: '0 auto',
-        width: '100%'
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: 'var(--surface-2)',
-            padding: '4px 12px',
-            borderRadius: 'var(--radius-pill)',
-            border: '1px solid var(--border)',
-            marginBottom: '14px'
-          }}>
-            <Shield size={12} color="var(--accent)" />
-            <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Security Suite
-            </span>
-          </div>
-          <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '12px' }}>
-            Built for High-Stakes Privacy
-          </h2>
-          <p style={{ fontSize: '15px', color: 'var(--text-muted)', maxWidth: '520px', margin: '0 auto' }}>
-            Every component is engineered around Swiss-inspired zero-trust principles.
-          </p>
-        </div>
-
-        {/* Bento Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: '20px'
-        }}>
-          {/* Bento 1: Secret Links */}
-          <div style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '28px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <div>
-              <div style={{
-                width: 36, height: 36, borderRadius: '8px',
-                background: 'rgba(0, 196, 140, 0.12)', border: '1px solid rgba(0, 196, 140, 0.25)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px'
-              }}>
-                <Link2 size={18} color="var(--success)" />
-              </div>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>
-                One-Time Secret Links
-              </h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                Transmit sensitive credentials or private notes. The link automatically dissolves from memory after a single view, with key in the URL hash.
-              </p>
-            </div>
-            <div style={{
-              marginTop: '20px',
-              padding: '10px 14px',
-              background: 'var(--surface-2)',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <span style={{ fontSize: '11px', fontFamily: 'JetBrains Mono, monospace', color: 'var(--text-dim)' }}>
-                https://disappear-chat.vercel.app/secret/#key=...
-              </span>
-            </div>
-          </div>
-
-          {/* Bento 2: Thanos Disintegration */}
-          <div style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '28px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <div>
-              <div style={{
-                width: 36, height: 36, borderRadius: '8px',
-                background: 'rgba(255, 71, 71, 0.12)', border: '1px solid rgba(255, 71, 71, 0.25)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px'
-              }}>
-                <Flame size={18} color="var(--danger)" />
-              </div>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>
-                Self-Destructing Messages
-              </h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                Set messages to disappear after they're read. When the timer runs out, messages cleanly dissolve off your screen and are permanently wiped with zero backups.
-              </p>
-            </div>
-            <div style={{
-              marginTop: '20px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '12px',
-              fontWeight: 600,
-              color: 'var(--danger)'
-            }}>
-              <Flame size={13} /> Permanently erased on timer
-            </div>
-          </div>
-
-          {/* Bento 3: Forward Secrecy & Timers */}
-          <div style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '28px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <div>
-              <div style={{
-                width: 36, height: 36, borderRadius: '8px',
-                background: 'var(--accent-dim)', border: '1px solid var(--accent-border)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px'
-              }}>
-                <Clock size={18} color="var(--accent)" />
-              </div>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>
-                Forward Secrecy & Timers
-              </h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                Session keys rotate dynamically every 5 minutes. If a room stays silent for 7 minutes, the Dead Man Switch triggers automatic annihilation.
-              </p>
-            </div>
-            <div style={{
-              marginTop: '20px',
-              display: 'flex',
-              gap: '8px'
-            }}>
-              {['5m', '15m', '1h', '24h'].map(t => (
-                <span key={t} style={{
-                  padding: '4px 10px',
-                  borderRadius: 'var(--radius-pill)',
-                  background: 'var(--surface-2)',
-                  border: '1px solid var(--border)',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  color: 'var(--text)'
-                }}>
-                  {t}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Bento 4: Anti-Surveillance */}
-          <div style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '28px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <div>
-              <div style={{
-                width: 36, height: 36, borderRadius: '8px',
-                background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.25)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px'
-              }}>
-                <EyeOff size={18} color="var(--warning)" />
-              </div>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>
-                Anti-Surveillance Shield
-              </h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                Multi-tab collision detection halts duplicate viewers. Screenshot attempts flash protective blackout deterrence, and copied text purges from clipboard in 10s.
-              </p>
-            </div>
-            <div style={{
-              marginTop: '20px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '12px',
-              color: 'var(--text-dim)'
-            }}>
-              <CheckCircle2 size={13} color="var(--success)" /> Browser sandbox protection
-            </div>
-          </div>
+          {/* 3D Dual-Device Visual Transmission Component */}
+          <VisualTransmission3D />
         </div>
       </section>
 
@@ -753,12 +453,11 @@ export default function LandingPage() {
                 {[
                   { feature: 'Client-Side AES-256-GCM', vc: true, sig: true, tg: false, wa: true },
                   { feature: 'No Phone / Email Required', vc: true, sig: false, tg: false, wa: false },
-                  { feature: 'Particle Disintegration (Thanos Snap)', vc: true, sig: false, tg: false, wa: false },
-                  { feature: 'Burn-on-Read Secret Links', vc: true, sig: false, tg: false, wa: false },
+                  { feature: 'Burn-on-Read Private Links', vc: true, sig: false, tg: false, wa: false },
                   { feature: 'Zero IP or Metadata Logging', vc: true, sig: true, tg: false, wa: false },
                   { feature: '100% Free Without Account', vc: true, sig: false, tg: false, wa: false },
-                ].map((row, i) => (
-                  <tr key={i} style={{ borderBottom: i === 5 ? 'none' : '1px solid var(--border-light)' }}>
+                ].map((row, i, arr) => (
+                  <tr key={i} style={{ borderBottom: i === arr.length - 1 ? 'none' : '1px solid var(--border-light)' }}>
                     <td style={{ padding: '14px 20px', fontWeight: 500, color: 'var(--text)' }}>{row.feature}</td>
                     <td style={{ padding: '14px 20px', color: 'var(--success)', fontWeight: 700 }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
