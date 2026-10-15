@@ -7,6 +7,7 @@
 :root {
   /* Proton Canvas & Surfaces */
   --bg: #13131A;               /* Deep Carbon canvas */
+  --header-bg: rgba(19, 19, 26, 0.85); /* Sticky frosted header (dark) */
   --surface: #1B1B24;          /* Primary cards & panels */
   --surface-2: #242432;        /* Secondary containers & inputs */
   --surface-3: #2F2F40;        /* Hover surface & active elements */
@@ -46,6 +47,7 @@
 /* ===== Design Tokens — Proton Swiss Light Mode ===== */
 [data-theme="light"] {
   --bg: #F5F4F2;               /* Warm Swiss paper canvas */
+  --header-bg: rgba(255, 255, 255, 0.90); /* Sticky frosted header (light) */
   --surface: #FFFFFF;          /* Pure white cards */
   --surface-2: #EBEAE7;        /* Secondary panel tint */
   --surface-3: #DDDCD8;        /* Hover surface */

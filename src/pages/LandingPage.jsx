@@ -83,17 +83,17 @@ export default function LandingPage() {
     }}>
 
       {/* Top Announcement Bar — DESKTOP ONLY */}
-      <div className="desktop-only" style={{
-        background: 'var(--surface)',
+      <div className="desktop-flex" style={{
+        background: 'var(--surface-2)',
         borderBottom: '1px solid var(--border)',
-        padding: '8px 20px',
-        display: 'flex',
+        padding: '8px 24px',
         alignItems: 'center',
         justifyContent: 'center',
         gap: '12px',
         fontSize: '12px',
         color: 'var(--text-muted)',
-        zIndex: 10
+        zIndex: 10,
+        width: '100%'
       }}>
         <span style={{
           background: 'var(--accent)',

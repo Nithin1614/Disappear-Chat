@@ -16,19 +16,19 @@ export default function Header() {
 
   return (
     <header style={{
-      background: 'rgba(19, 19, 26, 0.82)',
+      background: 'var(--header-bg)',
       backdropFilter: 'blur(16px)',
       WebkitBackdropFilter: 'blur(16px)',
       borderBottom: '1px solid var(--border)',
       position: 'sticky',
       top: 0,
       zIndex: 50,
-      transition: 'background 0.2s ease',
+      transition: 'background 0.2s ease, border-color 0.2s ease',
     }}>
       <div style={{
-        maxWidth: '1060px',
+        maxWidth: '1200px',
         margin: '0 auto',
-        padding: '0 20px',
+        padding: '0 24px',
         height: '60px',
         display: 'flex',
         alignItems: 'center',
@@ -96,7 +96,7 @@ export default function Header() {
           gap: '6px',
           padding: '4px 12px',
           borderRadius: '9999px',
-          background: 'var(--surface)',
+          background: 'var(--surface-2)',
           border: '1px solid var(--border)',
           fontSize: '12px',
           color: 'var(--text-muted)'
@@ -126,7 +126,7 @@ export default function Header() {
                 fontWeight: 600,
                 padding: '4px 12px 4px 6px',
                 borderRadius: '9999px',
-                background: 'var(--surface)',
+                background: 'var(--surface-2)',
                 border: '1px solid var(--border)',
                 color: 'var(--text)'
               }}>
@@ -151,7 +151,7 @@ export default function Header() {
                 onClick={handleLogout}
                 title="Sign out of temporary identity"
                 style={{
-                  background: 'var(--surface)',
+                  background: 'var(--surface-2)',
                   border: '1px solid var(--border)',
                   borderRadius: '8px',
                   padding: '7px',
@@ -176,7 +176,7 @@ export default function Header() {
                 gap: '6px',
                 padding: '4px 10px',
                 borderRadius: '9999px',
-                background: 'var(--surface)',
+                background: 'var(--surface-2)',
                 border: '1px solid var(--border)',
                 fontSize: '11px',
                 fontWeight: 600,
